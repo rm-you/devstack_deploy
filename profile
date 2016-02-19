@@ -1,8 +1,16 @@
+# Fix permissions on current tty so screens can attach
+sudo chmod go+rw `tty`
+
 # Add environment variables for auth/endpoints
 source /opt/stack/devstack/openrc admin admin
 export BARBICAN_ENDPOINT="http://localhost:9311"
 
-# Make prettyprint json easy
+# Set some utility variables
+PROJECT_ID=$(openstack token issue | awk '/ project_id / {print $4}')
+export PROJECT_ID="${PROJECT_ID:0:8}-${PROJECT_ID:8:4}-${PROJECT_ID:12:4}-${PROJECT_ID:16:4}-${PROJECT_ID:20}"
+export DEFAULT_NETWORK=$(neutron subnet-list | awk '/ private-subnet / {print $2}')
+
+# Make pretty-printing json easy
 alias json="python -mjson.tool"
 
 # Run this to generate nova VMs as a test backend

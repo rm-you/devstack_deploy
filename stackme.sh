@@ -33,9 +33,6 @@ mv /tmp/devstack /opt/stack/
 chown -R stack:stack /opt/stack/devstack/
 
 cat <<EOF >> /opt/stack/.profile
-# Fix permissions on current tty so screens can attach
-sudo chmod go+rw `tty`
-
 # Prepare patches for localrc
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export NEUTRON_LBAAS_PATCH="$NEUTRON_LBAAS_PATCH"
@@ -50,14 +47,6 @@ pip install tox
 
 # Grab utility scripts from github and add them to stack's .profile
 wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile >> /opt/stack/.profile
-
-# Set some utility variables
-NETWORK=$(su - stack -c "neutron subnet-list" | awk '/ private-subnet / {print $2}')
-PROJECT_ID=$(su - stack -c "openstack token issue" | awk '/ project_id / {print $4}')
-cat <<EOF >> /opt/stack/.profile
-export PROJECT_ID="${PROJECT_ID:0:8}-${PROJECT_ID:8:4}-${PROJECT_ID:12:4}-${PROJECT_ID:16:4}-${PROJECT_ID:20}"
-export DEFAULT_NETWORK='$NETWORK'
-EOF
 
 # Set up barbican container
 bash <(curl -sL https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh)
