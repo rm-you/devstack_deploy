@@ -15,3 +15,7 @@ profile
 -------
 * Extra functions to be appended to the stack user's .profile
 
+make_container.sh
+-----------------
+* Script to create secrets and containers in barbican (dummy snakeoil cert)
+

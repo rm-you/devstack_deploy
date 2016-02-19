@@ -1,3 +1,8 @@
+# Add environment variables for auth/endpoints
+source /opt/stack/devstack/openrc admin admin
+export BARBICAN_ENDPOINT="http://localhost:9311"
+
+# Make prettyprint json easy
 alias json="python -mjson.tool"
 
 # Run this to generate nova VMs as a test backend
@@ -12,33 +17,38 @@ function gen_backend() {
   nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security_groups member --key-name default
   nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security_groups member --key-name default --poll
   sleep 5
-  MEMBER1_IP=$(nova show member1 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}'')
-  MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}'')
+  export MEMBER1_IP=$(nova show member1 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
+  export MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER1_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member1\!' | sudo nc -l -p 80 ; done)&"
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER2_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member2\!' | sudo nc -l -p 80 ; done)&"
   curl $MEMBER1_IP
   curl $MEMBER2_IP
 }
 
+# Create a LB with Neutron-LBaaS
 function create_lb() {
   neutron lbaas-loadbalancer-create $DEFAULT_NETWORK --name lb1
   watch neutron lbaas-loadbalancer-show lb1
 }
 
+# Create a Listener with Neutron-LBaaS
 function create_listener() {
   neutron lbaas-listener-create --loadbalancer lb1 --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$DEFAULT_TLS_CONTAINER
   watch neutron lbaas-loadbalancer-show lb1
 }
 
+# Create a Pool with Neutron-LBaaS
 function create_pool() {
-  # Create pool
   neutron lbaas-pool-create --name pool1 --protocol HTTP --listener listener1 --lb-algorithm ROUND_ROBIN
-  sleep 5 # blegh
-  # Create members
-  MEMBER1_IP=$(nova show member1 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}'')
-  neutron lbaas-member-create pool1 --address $MEMBER1_IP  --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') 
-  sleep 5
-  MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}'')
-  neutron lbaas-member-create pool1 --address $MEMBER2_IP  --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') 
+  watch neutron lbaas-loadbalancer-show lb1
+}
+
+# Create Members with Neutron-LBaaS
+function create_members() {
+  export MEMBER1_IP=$(nova show member1 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
+  neutron lbaas-member-create pool1 --address $MEMBER1_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') 
+  watch neutron lbaas-loadbalancer-show lb1  # TODO: Make a proper wait, right now just assumes you will ctrl-c when ready
+  export MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
+  neutron lbaas-member-create pool1 --address $MEMBER2_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') 
 }
 
