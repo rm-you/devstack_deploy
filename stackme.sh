@@ -27,39 +27,8 @@ cat <<EOF > /tmp/devstack/localrc
 enable_plugin barbican https://review.openstack.org/openstack/barbican $BARBICAN_PATCH
 enable_plugin neutron-lbaas https://review.openstack.org/openstack/neutron-lbaas $NEUTRON_LBAAS_PATCH
 enable_plugin octavia https://review.openstack.org/openstack/octavia $OCTAVIA_PATCH
-LIBS_FROM_GIT+=python-neutronclient
-
-KEYSTONE_TOKEN_FORMAT=UUID
-HOST_IP=127.0.0.1
-
-DATABASE_PASSWORD=secretdatabase
-RABBIT_PASSWORD=secretrabbit
-ADMIN_PASSWORD=secretadmin
-SERVICE_PASSWORD=secretservice
-SERVICE_TOKEN=111222333444
-# Enable Logging
-LOGFILE=/opt/stack/logs/stack.sh.log
-VERBOSE=True
-LOG_COLOR=True
-SCREEN_LOGDIR=/opt/stack/logs
-# Pre-requisite
-ENABLED_SERVICES=rabbit,mysql,key
-# Nova
-ENABLED_SERVICES+=,n-api,n-crt,n-cpu,n-cond,n-sch
-IMAGE_URLS+=",https://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img"
-# Glance
-ENABLED_SERVICES+=,g-api,g-reg
-# Neutron
-ENABLED_SERVICES+=,q-svc,q-agt,q-dhcp,q-l3,q-meta,neutron
-# Enable LBaaS V2
-ENABLED_SERVICES+=,q-lbaasv2
-# Cinder
-#ENABLED_SERVICES+=,cinder,c-api,c-vol,c-sch
-# Tempest
-ENABLED_SERVICES+=,tempest
-# Octavia
-ENABLED_SERVICES+=,octavia,o-api,o-cw,o-hm
 EOF
+wget -O - https://github.com/rm-you/devstack_deploy/blob/master/localrc >> /tmp/devstack/localrc
 
 # Create the stack user
 /tmp/devstack/tools/create-stack-user.sh
@@ -134,54 +103,11 @@ NETWORK=$(su - stack -c "neutron subnet-list" | awk '/ private-subnet / {print $
 PROJECT_ID=$(su - stack -c "openstack token issue" | awk '/ project_id / {print $4}')
 
 cat <<EOF >> /opt/stack/.profile
-
-alias json="python -mjson.tool"
 export DEFAULT_TLS_CONTAINER='$CONTAINER'
 export DEFAULT_NETWORK='$NETWORK'
 export PROJECT_ID="${PROJECT_ID:0:8}-${PROJECT_ID:8:4}-${PROJECT_ID:12:4}-${PROJECT_ID:16:4}-${PROJECT_ID:20}"
-
-# Run this to generate nova VMs as a test backend
-function gen_backend() {
-  ssh-keygen -f /opt/stack/.ssh/id_rsa -t rsa -N '' -q
-  nova keypair-add default --pub-key ~/.ssh/id_rsa.pub 
-  neutron security-group-create member
-  nova secgroup-add-rule member tcp 22 22 0.0.0.0/0
-  nova secgroup-add-rule member tcp 80 80 0.0.0.0/0
-  nova secgroup-add-rule member icmp -1 -1 0.0.0.0/0
-  PRIVATE_NETWORK=\$(neutron net-list | awk '/ private / {print \$2}')
-  nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=\$PRIVATE_NETWORK member1 --security_groups member --key-name default
-  nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=\$PRIVATE_NETWORK member2 --security_groups member --key-name default --poll
-  sleep 5
-  MEMBER1_IP=\$(nova show member1 | awk '/private network/ {a = substr(\$5, 0, length(\$5)-1); if (a ~ "\\.") print a; else print \$6}'')
-  MEMBER2_IP=\$(nova show member2 | awk '/private network/ {a = substr(\$5, 0, length(\$5)-1); if (a ~ "\\.") print a; else print \$6}'')
-  ssh -o StrictHostKeyChecking=no cirros@\$MEMBER1_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member1\!' | sudo nc -l -p 80 ; done)&"
-  ssh -o StrictHostKeyChecking=no cirros@\$MEMBER2_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member2\!' | sudo nc -l -p 80 ; done)&"
-  curl \$MEMBER1_IP
-  curl \$MEMBER2_IP
-}
-
-function create_lb() {
-  neutron lbaas-loadbalancer-create \$DEFAULT_NETWORK --name lb1
-  watch neutron lbaas-loadbalancer-show lb1
-}
-
-function create_listener() {
-  neutron lbaas-listener-create --loadbalancer lb1 --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=\$DEFAULT_TLS_CONTAINER
-  watch neutron lbaas-loadbalancer-show lb1
-}
-
-function create_pool() {
-  # Create pool
-  neutron lbaas-pool-create --name pool1 --protocol HTTP --listener listener1 --lb-algorithm ROUND_ROBIN
-  sleep 5 # blegh
-  # Create members
-  MEMBER1_IP=\$(nova show member1 | awk '/private network/ {a = substr(\$5, 0, length(\$5)-1); if (a ~ "\\\\.") print a; else print \$6}'')
-  neutron lbaas-member-create pool1 --address \$MEMBER1_IP  --protocol-port 80 --subnet \$(neutron subnet-list | awk '/ private-subnet / {print \$2}') 
-  sleep 5
-  MEMBER2_IP=\$(nova show member2 | awk '/private network/ {a = substr(\$5, 0, length(\$5)-1); if (a ~ "\\\\.") print a; else print \$6}'')
-  neutron lbaas-member-create pool1 --address \$MEMBER2_IP  --protocol-port 80 --subnet \$(neutron subnet-list | awk '/ private-subnet / {print \$2}') 
-}
 EOF
+wget -O - https://github.com/rm-you/devstack_deploy/blob/master/profile >> /opt/stack/.profile
 
 # Drop into a shell
 su - stack
