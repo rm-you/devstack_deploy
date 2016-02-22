@@ -1,8 +1,9 @@
 #!/bin/bash
 
 BARBICAN_PATCH=""
-NEUTRON_LBAAS_PATCH=""
 OCTAVIA_PATCH=""
+NEUTRON_LBAAS_PATCH=""
+NEUTRON_CLIENT_PATCH=""
 
 # Quick sanity check (should be run on Ubuntu 14.04 and MUST be run as root directly)
 if [ `lsb_release -rs` != "14.04" ]
@@ -63,6 +64,12 @@ EOF
 
 # Let's rock
 su - stack -c /opt/stack/devstack/stack.sh
+
+# Update neutron client if necessary
+if [ -n "$NEUTRON_CLIENT_PATCH" ]
+then
+    su - stack -c "cd python-neutronclient && git fetch https://review.openstack.org/openstack/python-neutronclient $NEUTRON_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
+fi
 
 # Install tox globally
 pip install tox
