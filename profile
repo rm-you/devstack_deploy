@@ -24,11 +24,12 @@ function gen_backend() {
   PRIVATE_NETWORK=$(neutron net-list | awk '/ private / {print $2}')
   nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security_groups member --key-name default
   nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security_groups member --key-name default --poll
-  sleep 10
+  sleep 15
   export MEMBER1_IP=$(nova show member1 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
   export MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER1_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member1' | sudo nc -l -p 80 ; done)&"
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER2_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member2' | sudo nc -l -p 80 ; done)&"
+  sleep 5
   curl $MEMBER1_IP
   curl $MEMBER2_IP
 }
