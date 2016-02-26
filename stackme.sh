@@ -2,8 +2,6 @@
 
 # TODO: Remove these default patchsets after L7 merges
 # Set up for L7 testing temporarily
-BARBICAN_PATCH="refs/changes/09/283509/1"
-OCTAVIA_PATCH="refs/changes/30/278830/9"
 NEUTRON_LBAAS_PATCH="refs/changes/32/148232/48"
 NEUTRON_CLIENT_PATCH="refs/changes/76/217276/13"
 
@@ -26,7 +24,7 @@ apt-get install git vim -y
 # Clone the devstack repo
 git clone https://github.com/openstack-dev/devstack.git /tmp/devstack
 
-wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/localrc > /tmp/devstack/localrc
+wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/postgres-neutron-lbaas/localrc > /tmp/devstack/localrc
 
 # Create the stack user
 /tmp/devstack/tools/create-stack-user.sh
@@ -37,9 +35,7 @@ chown -R stack:stack /opt/stack/devstack/
 
 cat >>/opt/stack/.profile <<EOF
 # Prepare patches for localrc
-export BARBICAN_PATCH="$BARBICAN_PATCH"
 export NEUTRON_LBAAS_PATCH="$NEUTRON_LBAAS_PATCH"
-export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 EOF
 
 # Use the openstack mirrors for pip
@@ -77,10 +73,7 @@ fi
 pip install tox
 
 # Grab utility scripts from github and add them to stack's .profile
-wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile >> /opt/stack/.profile
-
-# Set up barbican container
-bash <(curl -sL https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh)
+wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/postgres-neutron-lbaas/profile >> /opt/stack/.profile
 
 # Drop into a shell
 su - stack

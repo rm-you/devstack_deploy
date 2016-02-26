@@ -1,6 +1,4 @@
-enable_plugin barbican https://review.openstack.org/openstack/barbican $BARBICAN_PATCH
 enable_plugin neutron-lbaas https://review.openstack.org/openstack/neutron-lbaas $NEUTRON_LBAAS_PATCH
-enable_plugin octavia https://review.openstack.org/openstack/octavia $OCTAVIA_PATCH
 LIBS_FROM_GIT+=python-neutronclient
 
 KEYSTONE_TOKEN_FORMAT=UUID
@@ -17,7 +15,7 @@ VERBOSE=True
 LOG_COLOR=True
 SCREEN_LOGDIR=/opt/stack/logs
 # Pre-requisite
-ENABLED_SERVICES=rabbit,mysql,key
+ENABLED_SERVICES=rabbit,postgresql,key
 # Nova
 ENABLED_SERVICES+=,n-api,n-crt,n-cpu,n-cond,n-sch
 IMAGE_URLS+=",https://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img"
@@ -31,6 +29,3 @@ ENABLED_SERVICES+=,q-lbaasv2
 #ENABLED_SERVICES+=,cinder,c-api,c-vol,c-sch
 # Tempest
 ENABLED_SERVICES+=,tempest
-# Octavia
-ENABLED_SERVICES+=,octavia,o-api,o-cw,o-hm
-
