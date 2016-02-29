@@ -2,10 +2,10 @@
 
 # TODO: Remove these default patchsets after L7 merges
 # Set up for L7 testing temporarily
-BARBICAN_PATCH="refs/changes/09/283509/1"
-OCTAVIA_PATCH="refs/changes/30/278830/9"
-NEUTRON_LBAAS_PATCH="refs/changes/32/148232/48"
-NEUTRON_CLIENT_PATCH="refs/changes/76/217276/13"
+BARBICAN_PATCH=""
+OCTAVIA_PATCH="refs/changes/13/257013/31"
+NEUTRON_LBAAS_PATCH=""
+NEUTRON_CLIENT_PATCH=""
 
 # Quick sanity check (should be run on Ubuntu 14.04 and MUST be run as root directly)
 if [ `lsb_release -rs` != "14.04" ]
