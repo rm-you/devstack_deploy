@@ -1,9 +1,7 @@
 #!/bin/bash
 
-# TODO: Remove these default patchsets after L7 merges
-# Set up for L7 testing temporarily
 BARBICAN_PATCH=""
-OCTAVIA_PATCH="refs/changes/13/257013/31"
+OCTAVIA_PATCH=""
 NEUTRON_LBAAS_PATCH=""
 NEUTRON_CLIENT_PATCH=""
 
