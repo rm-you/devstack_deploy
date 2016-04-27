@@ -22,8 +22,8 @@ function gen_backend() {
   nova secgroup-add-rule member tcp 80 80 0.0.0.0/0
   nova secgroup-add-rule member icmp -1 -1 0.0.0.0/0
   PRIVATE_NETWORK=$(neutron net-list | awk '/ private / {print $2}')
-  nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security_groups member --key-name default
-  nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security_groups member --key-name default --poll
+  nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-groups member --key-name default
+  nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-groups member --key-name default --poll
   sleep 15
   export MEMBER1_IP=$(nova show member1 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
   export MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
