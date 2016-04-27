@@ -1,9 +1,9 @@
 #!/bin/bash
 
-BARBICAN_PATCH=""
-OCTAVIA_PATCH=""
-NEUTRON_LBAAS_PATCH=""
-NEUTRON_CLIENT_PATCH=""
+BARBICAN_PATCH="stable/mitaka"
+OCTAVIA_PATCH="stable/mitaka"
+NEUTRON_LBAAS_PATCH="stable/mitaka"
+NEUTRON_CLIENT_PATCH="stable/mitaka"
 
 # Quick sanity check (should be run on Ubuntu 14.04 and MUST be run as root directly)
 if [ `lsb_release -rs` != "14.04" ]
@@ -23,8 +23,17 @@ apt-get install git vim -y
 
 # Clone the devstack repo
 git clone https://github.com/openstack-dev/devstack.git /tmp/devstack
+cd /tmp/devstack
+git checkout stable/mitaka
+cd -
 
-wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/localrc > /tmp/devstack/localrc
+cat >/tmp/devstack/localrc <<EOF
+NOVA_BRANCH="stable/mitaka"
+GLANCE_BRANCH="stable/mitaka"
+NEUTRON_BRANCH="stable/mitaka"
+KEYSTONE_BRANCH="stable/mitaka"
+EOF
+wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/localrc >> /tmp/devstack/localrc
 
 # Create the stack user
 /tmp/devstack/tools/create-stack-user.sh
@@ -32,6 +41,12 @@ wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/localr
 # Move everything into place
 mv /tmp/devstack /opt/stack/
 chown -R stack:stack /opt/stack/devstack/
+
+git clone https://github.com/openstack/octavia ~stack/octavia
+cd ~stack/octavia
+git checkout $OCTAVIA_PATCH
+sed -i 's:octavia:octavia stable/mitaka:' ~stack/octavia/elements/amphora-agent-ubuntu/source-repository-amphora-agent
+cd -
 
 cat >>/opt/stack/.profile <<EOF
 # Prepare patches for localrc
@@ -41,7 +56,7 @@ export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 EOF
 
 # Use the openstack mirrors for pip
-NODEPOOL_REGION=iad
+NODEPOOL_REGION=dfw
 NODEPOOL_CLOUD=rax
 NODEPOOL_MIRROR_HOST=mirror.$NODEPOOL_REGION.$NODEPOOL_CLOUD.openstack.org
 NODEPOOL_MIRROR_HOST=$(echo $NODEPOOL_MIRROR_HOST|tr '[:upper:]' '[:lower:]')
