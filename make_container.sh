@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set up an example Certificate Container
-CERT=$(su - stack -c "barbican secret store -p '-----BEGIN CERTIFICATE-----
+CERT=$(su - stack -c "openstack secret store -p '-----BEGIN CERTIFICATE-----
 MIIC+zCCAeOgAwIBAgIJAL3vlrrJiFHIMA0GCSqGSIb3DQEBBQUAMBQxEjAQBgNV
 BAMMCWxvY2FsaG9zdDAeFw0xNjAxMTIxOTM4MjJaFw0yNjAxMDkxOTM4MjJaMBQx
 EjAQBgNVBAMMCWxvY2FsaG9zdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
@@ -20,7 +20,7 @@ P2EmTWw00G+Bt6VkZ+GQkm04lIuWC0cGQ2aEf7gnqsesLVmj/1yIganmBn1XbJDi
 D3Ur1mrVfY3GFdQRkX41fHT/AJDN2j7XUInOMav4ie8MpQHF3weJpVqAymxT6kM=
 -----END CERTIFICATE-----'" | awk ' / Secret href / {print $5}')
 
-KEY=$(su - stack -c "barbican secret store -p '-----BEGIN RSA PRIVATE KEY-----
+KEY=$(su - stack -c "openstack secret store -p '-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEArlOv7YyPSOkEF2/M8EBdVWGU1hWrWhjzcA2BF4SG8r9KkoSb
 1+lNMwCrTnkV3MN2+8yYvOVeDdf/Sgdrr3xIF4uyUbS+RmkS4BrWh1gHD24YT4kc
 jhlzuyTKk99IrVtMoPzn7kvqhsLAG8u7XIuSfeP2LuIwq28s+VLqacYIQMvPr2UN
@@ -48,7 +48,7 @@ o4msNVGmQw5aYraFfeY+a9U6sRCVue8YFA9Tx7/lOGltGGRkoSLb0zvBUkoa9C5o
 bAr1Kb5osO6Km+kGNBAZo94CqKJio+NzSsAru6xgsFmvwGHZTz8YQw==
 -----END RSA PRIVATE KEY-----'" | awk ' / Secret href / {print $5}')
 
-CONTAINER=$(su - stack -c "barbican secret container create --type certificate -s 'certificate=$CERT' -s 'private_key=$KEY'" | awk ' / Container href / {print $5}')
+CONTAINER=$(su - stack -c "openstack secret container create --type certificate -s 'certificate=$CERT' -s 'private_key=$KEY'" | awk ' / Container href / {print $5}')
 
 echo "export DEFAULT_TLS_CONTAINER='$CONTAINER'" >> /opt/stack/.profile
 
