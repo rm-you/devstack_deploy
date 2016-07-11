@@ -9,6 +9,7 @@ export BARBICAN_ENDPOINT="http://localhost:9311"
 PROJECT_ID=$(openstack token issue | awk '/ project_id / {print $4}')
 export PROJECT_ID="${PROJECT_ID:0:8}-${PROJECT_ID:8:4}-${PROJECT_ID:12:4}-${PROJECT_ID:16:4}-${PROJECT_ID:20}"
 export DEFAULT_NETWORK=$(neutron subnet-list | awk '/ private-subnet / {print $2}')
+export DEFAULT_NETWORK_IPV6=$(neutron subnet-list | awk '/ ipv6-private-subnet / {print $2}')
 
 # Make pretty-printing json easy
 alias json="python -mjson.tool"
@@ -19,14 +20,17 @@ function gen_backend() {
   nova keypair-add default --pub-key ~/.ssh/id_rsa.pub 
   neutron security-group-create member
   nova secgroup-add-rule member tcp 22 22 0.0.0.0/0
+  nova secgroup-add-rule member tcp 22 22 0::/0
   nova secgroup-add-rule member tcp 80 80 0.0.0.0/0
+  nova secgroup-add-rule member tcp 80 80 0::/0
   nova secgroup-add-rule member icmp -1 -1 0.0.0.0/0
+  nova secgroup-add-rule member icmp -1 -1 0::/0
   PRIVATE_NETWORK=$(neutron net-list | awk '/ private / {print $2}')
   nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-groups member --key-name default
   nova boot --image cirros-0.3.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-groups member --key-name default --poll
   sleep 15
   export MEMBER1_IP=$(nova show member1 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
-  export MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
+  export MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ ":") print a; else print $6}')
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER1_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member1' | sudo nc -l -p 80 ; done)&"
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER2_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member2' | sudo nc -l -p 80 ; done)&"
   sleep 5
