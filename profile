@@ -35,7 +35,7 @@ function gen_backend() {
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER2_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member2' | sudo nc -l -p 80 ; done)&"
   sleep 5
   curl $MEMBER1_IP
-  curl $MEMBER2_IP
+  curl -g "[$MEMBER2_IP]"
 }
 
 # Create a LB with Neutron-LBaaS
@@ -58,10 +58,12 @@ function create_pool() {
 
 # Create Members with Neutron-LBaaS
 function create_members() {
+  # Get member ips again because we might be in a different shell
   export MEMBER1_IP=$(nova show member1 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
   neutron lbaas-member-create pool1 --address $MEMBER1_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') 
+  # Get the second memberIP while we're waiting anyway
+  export MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ ":") print a; else print $6}')
   watch neutron lbaas-loadbalancer-show lb1  # TODO: Make a proper wait, right now just assumes you will ctrl-c when ready
-  export MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
-  neutron lbaas-member-create pool1 --address $MEMBER2_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') 
+  neutron lbaas-member-create pool1 --address $MEMBER2_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ ipv6-private-subnet / {print $2}') 
 }
 
