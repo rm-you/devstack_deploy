@@ -14,6 +14,9 @@ export DEFAULT_NETWORK_IPV6=$(neutron subnet-list | awk '/ ipv6-private-subnet /
 # Make pretty-printing json easy
 alias json="python -mjson.tool"
 
+# Make sshing to amps easy
+alias ossh="ssh -i /etc/octavia/.ssh/octavia_ssh_key -l ubuntu"
+
 # Run this to generate nova VMs as a test backend
 function gen_backend() {
   ssh-keygen -f /opt/stack/.ssh/id_rsa -t rsa -N '' -q
