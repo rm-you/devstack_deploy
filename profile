@@ -43,6 +43,10 @@ function create_lb() {
   neutron lbaas-loadbalancer-create $DEFAULT_NETWORK --name lb1
   watch neutron lbaas-loadbalancer-show lb1
 }
+function create_lb_ipv6() {
+  neutron lbaas-loadbalancer-create $DEFAULT_NETWORK_IPV6 --name lb1_ipv6
+  watch neutron lbaas-loadbalancer-show lb1_ipv6
+}
 
 # Create a Listener with Neutron-LBaaS
 function create_listener() {
