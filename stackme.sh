@@ -38,6 +38,9 @@ cat >>/opt/stack/.profile <<EOF
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export NEUTRON_LBAAS_PATCH="$NEUTRON_LBAAS_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
+
+# Use Xenial for DIB
+DIB_RELEASE=xenial
 EOF
 
 # Use the openstack mirrors for pip
