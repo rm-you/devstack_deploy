@@ -1,87 +1,76 @@
-#!/bin/bash
+#!/bin/bash -x
 
 BARBICAN_PATCH=""
-OCTAVIA_PATCH=""
+OCTAVIA_PATCH="refs/changes/90/356590/13"
 NEUTRON_LBAAS_PATCH=""
 NEUTRON_CLIENT_PATCH=""
+DIB_PATCH="refs/changes/69/407769/16"
 
-# Quick sanity check (should be run on Ubuntu 14.04 and MUST be run as root directly)
-if [ `lsb_release -rs` != "14.04" ]
-then
-  echo -n "Warning: This script is only tested against Ubuntu 14.04. Press <enter> to continue at your own risk... "
-  read
-fi
-if [ `whoami` != "root" -o -n "$SUDO_COMMAND" ]
-then
-  echo "This script must be run as root, and not using 'sudo'!"
-  exit 1
-fi
-
-# Set up the packages we need
-apt-get update
-apt-get install git vim -y
+sudo yum -y install python-pip
 
 # Clone the devstack repo
 git clone https://github.com/openstack-dev/devstack.git /tmp/devstack
 
-wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/localrc > /tmp/devstack/localrc
+# Centos 7 needs sudo for screen_process sg
+sed -i 's/command="sg /command="sudo sg /' /tmp/devstack/functions-common
+
+wget -O /tmp/devstack/localrc https://raw.githubusercontent.com/rm-you/devstack_deploy/master/localrc
 
 # Create the stack user
-/tmp/devstack/tools/create-stack-user.sh
+sudo /tmp/devstack/tools/create-stack-user.sh
 
-# Move everything into place
-mv /tmp/devstack /opt/stack/
-chown -R stack:stack /opt/stack/devstack/
+# Move everything into place and fix perms
+sudo mv /tmp/devstack /opt/stack/
+sudo chown -R stack:stack /opt/stack/devstack/
+#sudo chmod -R g+rX /opt/stack
+#sudo usermod -a -G stack `whoami`
 
-cat >>/opt/stack/.profile <<EOF
+cat <<EOF | sudo -u stack tee -a /opt/stack/.bash_profile > /dev/null
 # Prepare patches for localrc
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export NEUTRON_LBAAS_PATCH="$NEUTRON_LBAAS_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 
 # Use Xenial for DIB
-DIB_RELEASE=xenial
+export DIB_RELEASE=xenial
 EOF
 
-# Use the openstack mirrors for pip
-NODEPOOL_REGION=iad
-NODEPOOL_CLOUD=rax
-NODEPOOL_MIRROR_HOST=mirror.$NODEPOOL_REGION.$NODEPOOL_CLOUD.openstack.org
-NODEPOOL_MIRROR_HOST=$(echo $NODEPOOL_MIRROR_HOST|tr '[:upper:]' '[:lower:]')
-NODEPOOL_PYPI_MIRROR=http://$NODEPOOL_MIRROR_HOST/pypi/simple
-NODEPOOL_WHEEL_MIRROR=http://$NODEPOOL_MIRROR_HOST/wheel/ubuntu-14.04-x86_64/
+# Fix centos 7 issue with iptables
+sudo touch /etc/sysconfig/iptables
+sudo sed -i 's/net.ipv6.conf.all.disable_ipv6=1/net.ipv6.conf.all.disable_ipv6=0/' /etc/sysctl.conf
+sudo sed -i 's/net.ipv6.conf.default.disable_ipv6=1/net.ipv6.conf.default.disable_ipv6=0/' /etc/sysctl.conf
+sudo sed -i 's/net.ipv6.conf.lo.disable_ipv6=1/net.ipv6.conf.lo.disable_ipv6=0/' /etc/sysctl.conf
+sudo sysctl -p /etc/sysctl.conf
 
-cat >/etc/pip.conf <<EOF
-[global]
-timeout = 60
-index-url = $NODEPOOL_PYPI_MIRROR
-trusted-host = $NODEPOOL_MIRROR_HOST
-extra-index-url = $NODEPOOL_WHEEL_MIRROR
-EOF
-
-cat >/opt/stack/.pydistutils.cfg <<EOF
-[easy_install]
-index_url = $NODEPOOL_PYPI_MIRROR
-allow_hosts = *.openstack.org
-EOF
+# Grab dib and patches
+if [ -n "$DIB_PATCH" ]; then
+	sudo su - stack -c "git clone https://review.openstack.org/p/openstack/diskimage-builder /opt/stack/diskimage-builder"
+	sudo cd /opt/stack/diskimage-builder
+	sudo -u stack git fetch https://git.openstack.org/openstack/diskimage-builder $DIB_PATCH && sudo -u stack git checkout FETCH_HEAD
+        sudo cd -
+fi
 
 # Let's rock
-su - stack -c /opt/stack/devstack/stack.sh
+echo "Press enter to ROCK" && read
+sudo su - stack -c /opt/stack/devstack/stack.sh
+read
 
 # Update neutron client if necessary
 if [ -n "$NEUTRON_CLIENT_PATCH" ]
 then
-    su - stack -c "cd python-neutronclient && git fetch https://review.openstack.org/openstack/python-neutronclient $NEUTRON_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
+    sudo -u stack "cd python-neutronclient && git fetch https://review.openstack.org/openstack/python-neutronclient $NEUTRON_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
 fi
 
 # Install tox globally
-pip install tox
+sudo pip install tox
 
-# Grab utility scripts from github and add them to stack's .profile
-wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile >> /opt/stack/.profile
+# Grab utility scripts from github and add them to stack's .bash_profile
+wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/profile | sudo -u stack tee -a /opt/stack/.bash_profile
 
 # Set up barbican container
-bash <(curl -sL https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh)
+wget https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/make_container.sh
+chmod +x make_container.sh
+sudo -u stack ./make_container.sh
 
 # Drop into a shell
-su - stack
+sudo su - stack

@@ -8,8 +8,8 @@ export BARBICAN_ENDPOINT="http://localhost:9311"
 # Set some utility variables
 PROJECT_ID=$(openstack token issue | awk '/ project_id / {print $4}')
 export PROJECT_ID="${PROJECT_ID:0:8}-${PROJECT_ID:8:4}-${PROJECT_ID:12:4}-${PROJECT_ID:16:4}-${PROJECT_ID:20}"
-export DEFAULT_NETWORK=$(neutron subnet-list | awk '/ private-subnet / {print $2}')
-export DEFAULT_NETWORK_IPV6=$(neutron subnet-list | awk '/ ipv6-private-subnet / {print $2}')
+export DEFAULT_NETWORK=$(openstack subnet list | awk '/ private-subnet / {print $2}')
+export DEFAULT_NETWORK_IPV6=$(openstack subnet list | awk '/ ipv6-private-subnet / {print $2}')
 
 # Make pretty-printing json easy
 alias json="python -mjson.tool"
@@ -20,7 +20,7 @@ alias ossh="ssh -i /etc/octavia/.ssh/octavia_ssh_key -l ubuntu"
 # Run this to generate nova VMs as a test backend
 function gen_backend() {
   ssh-keygen -f /opt/stack/.ssh/id_rsa -t rsa -N '' -q
-  nova keypair-add default --pub-key ~/.ssh/id_rsa.pub 
+  openstack keypair create --public-key ~/.ssh/id_rsa.pub default
   neutron security-group-create member
   nova secgroup-add-rule member tcp 22 22 0.0.0.0/0
   nova secgroup-add-rule member tcp 22 22 0::/0
@@ -28,12 +28,12 @@ function gen_backend() {
   nova secgroup-add-rule member tcp 80 80 0::/0
   nova secgroup-add-rule member icmp -1 -1 0.0.0.0/0
   nova secgroup-add-rule member icmp -1 -1 0::/0
-  PRIVATE_NETWORK=$(neutron net-list | awk '/ private / {print $2}')
-  nova boot --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-groups member --key-name default
-  nova boot --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-groups member --key-name default --poll
+  PRIVATE_NETWORK=$(openstack network list | awk '/ private / {print $2}')
+  openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
+  openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --poll
   sleep 15
-  export MEMBER1_IP=$(nova show member1 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
-  export MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ ":") print a; else print $6}')
+  export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
+  export MEMBER2_IP=$(openstack server show member2 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ ":") print a; else print $5}')
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER1_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member1' | sudo nc -l -p 80 ; done)&"
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER2_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member2' | sudo nc -l -p 80 ; done)&"
   sleep 5
@@ -66,10 +66,10 @@ function create_pool() {
 # Create Members with Neutron-LBaaS
 function create_members() {
   # Get member ips again because we might be in a different shell
-  export MEMBER1_IP=$(nova show member1 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ "\\.") print a; else print $6}')
+  export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
   neutron lbaas-member-create pool1 --address $MEMBER1_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') 
   # Get the second memberIP while we're waiting anyway
-  export MEMBER2_IP=$(nova show member2 | awk '/private network/ {a = substr($5, 0, length($5)-1); if (a ~ ":") print a; else print $6}')
+  export MEMBER2_IP=$(openstack server show member2 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ ":") print a; else print $5}')
   watch neutron lbaas-loadbalancer-show lb1  # TODO: Make a proper wait, right now just assumes you will ctrl-c when ready
   neutron lbaas-member-create pool1 --address $MEMBER2_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ ipv6-private-subnet / {print $2}') 
 }
