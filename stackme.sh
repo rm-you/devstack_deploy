@@ -1,11 +1,25 @@
 #!/bin/bash -x
 
 BARBICAN_PATCH=""
-OCTAVIA_PATCH="refs/changes/90/356590/13"
+OCTAVIA_PATCH="refs/changes/87/410487/6"
 NEUTRON_LBAAS_PATCH=""
 NEUTRON_CLIENT_PATCH=""
-DIB_PATCH="refs/changes/69/407769/16"
+DIB_PATCH=""
 
+# Centos mirrors are broken inside GD, use some upstream mirror
+cat << EOF > /etc/yum.repos.d/CentOS-Base.repo
+[CentOS-Base]
+name=CentOS-Base
+baseurl=http://centos-distro.1gservers.com/7/os/x86_64/
+enabled=True
+gpgcheck=False
+EOF
+
+# Centos also has an ANCIENT version of git, grab a new version from some random repo
+yum -y install http://opensource.wandisco.com/centos/6/git/x86_64/wandisco-git-release-6-1.noarch.rpm
+yum -y update git
+
+# Install python-pip because we need it for stacking
 yum -y install python-pip
 
 # Clone the devstack repo
@@ -14,6 +28,7 @@ git clone https://github.com/openstack-dev/devstack.git /tmp/devstack
 # Centos 7 needs sudo for screen_process sg
 sed -i 's/command="sg /command="sudo sg /' /tmp/devstack/functions-common
 
+# Set up our localrc for devstack
 wget -O /tmp/devstack/localrc https://raw.githubusercontent.com/rm-you/devstack_deploy/master/localrc
 
 # Create the stack user
@@ -35,10 +50,13 @@ EOF
 
 # Fix centos 7 issue with iptables
 touch /etc/sysconfig/iptables
+
+# Fix ipv6 support
 sed -i 's/net.ipv6.conf.all.disable_ipv6=1/net.ipv6.conf.all.disable_ipv6=0/' /etc/sysctl.conf
 sed -i 's/net.ipv6.conf.default.disable_ipv6=1/net.ipv6.conf.default.disable_ipv6=0/' /etc/sysctl.conf
 sed -i 's/net.ipv6.conf.lo.disable_ipv6=1/net.ipv6.conf.lo.disable_ipv6=0/' /etc/sysctl.conf
 sysctl -p /etc/sysctl.conf
+echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
 
 # Grab dib and patches
 if [ -n "$DIB_PATCH" ]; then
@@ -68,7 +86,11 @@ wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/profil
 # Set up barbican container
 sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/make_container.sh -O /opt/stack/make_container.sh
 chmod +x /opt/stack/make_container.sh
-sudo -u stack /opt/stack/make_container.sh
+sudo su - stack -c /opt/stack/make_container.sh
+
+# Fix missing route
+ROUTER_IP=$(su - stack -c "openstack router show router1 | awk -F '|' ' / external_gateway_info / {print \$3} ' | jq -r '.external_fixed_ips[0].ip_address'")
+route add -net 10.0.0.0 netmask 255.255.255.0 gw $ROUTER_IP dev br-ex
 
 # Drop into a shell
 su - stack

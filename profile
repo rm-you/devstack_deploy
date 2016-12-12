@@ -2,7 +2,7 @@
 sudo chmod go+rw `tty`
 
 # Add environment variables for auth/endpoints
-source /opt/stack/devstack/openrc admin admin
+source /opt/stack/devstack/openrc admin admin >/dev/null
 export BARBICAN_ENDPOINT="http://localhost:9311"
 
 # Set some utility variables
@@ -30,7 +30,7 @@ function gen_backend() {
   nova secgroup-add-rule member icmp -1 -1 0::/0
   PRIVATE_NETWORK=$(openstack network list | awk '/ private / {print $2}')
   openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
-  openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --poll
+  openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --wait
   sleep 15
   export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
   export MEMBER2_IP=$(openstack server show member2 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ ":") print a; else print $5}')
@@ -67,10 +67,10 @@ function create_pool() {
 function create_members() {
   # Get member ips again because we might be in a different shell
   export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
-  neutron lbaas-member-create pool1 --address $MEMBER1_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') 
+  neutron lbaas-member-create pool1 --address $MEMBER1_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') --name member1
   # Get the second memberIP while we're waiting anyway
   export MEMBER2_IP=$(openstack server show member2 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ ":") print a; else print $5}')
   watch neutron lbaas-loadbalancer-show lb1  # TODO: Make a proper wait, right now just assumes you will ctrl-c when ready
-  neutron lbaas-member-create pool1 --address $MEMBER2_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ ipv6-private-subnet / {print $2}') 
+  neutron lbaas-member-create pool1 --address $MEMBER2_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ ipv6-private-subnet / {print $2}') --name member2
 }
 
