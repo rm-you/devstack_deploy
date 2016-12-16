@@ -1,4 +1,4 @@
-enable_plugin barbican https://review.openstack.org/openstack/barbican $BARBICAN_PATCH
+#enable_plugin barbican https://review.openstack.org/openstack/barbican $BARBICAN_PATCH
 enable_plugin neutron-lbaas https://review.openstack.org/openstack/neutron-lbaas $NEUTRON_LBAAS_PATCH
 enable_plugin octavia https://review.openstack.org/openstack/octavia $OCTAVIA_PATCH
 LIBS_FROM_GIT+=python-neutronclient
@@ -30,5 +30,5 @@ ENABLED_SERVICES+=,q-lbaasv2
 # Tempest
 ENABLED_SERVICES+=,tempest
 # Octavia
-ENABLED_SERVICES+=,octavia,o-api,o-cw,o-hm
+ENABLED_SERVICES+=,octavia,o-api,o-cw
 

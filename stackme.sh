@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-BARBICAN_PATCH=""
+#BARBICAN_PATCH=""
 OCTAVIA_PATCH="refs/changes/87/410487/6"
 NEUTRON_LBAAS_PATCH=""
 NEUTRON_CLIENT_PATCH=""
@@ -40,7 +40,7 @@ chown -R stack:stack /opt/stack/devstack/
 
 cat <<EOF | sudo -u stack tee -a /opt/stack/.bash_profile > /dev/null
 # Prepare patches for localrc
-export BARBICAN_PATCH="$BARBICAN_PATCH"
+#export BARBICAN_PATCH="$BARBICAN_PATCH"
 export NEUTRON_LBAAS_PATCH="$NEUTRON_LBAAS_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 
@@ -84,9 +84,9 @@ pip install tox
 wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/profile | sudo -u stack tee -a /opt/stack/.bash_profile
 
 # Set up barbican container
-sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/make_container.sh -O /opt/stack/make_container.sh
-chmod +x /opt/stack/make_container.sh
-sudo su - stack -c /opt/stack/make_container.sh
+#sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/make_container.sh -O /opt/stack/make_container.sh
+#chmod +x /opt/stack/make_container.sh
+#sudo su - stack -c /opt/stack/make_container.sh
 
 # Fix missing route
 ROUTER_IP=$(su - stack -c "openstack router show router1 | awk -F '|' ' / external_gateway_info / {print \$3} ' | jq -r '.external_fixed_ips[0].ip_address'")
