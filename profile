@@ -20,13 +20,13 @@ alias ossh="ssh -i /etc/octavia/.ssh/octavia_ssh_key -l ubuntu"
 function gen_backend() {
   ssh-keygen -f /opt/stack/.ssh/id_rsa -t rsa -N '' -q
   openstack keypair create --public-key ~/.ssh/id_rsa.pub default
-  neutron security-group-create member
-  nova secgroup-add-rule member tcp 22 22 0.0.0.0/0
-  nova secgroup-add-rule member tcp 22 22 0::/0
-  nova secgroup-add-rule member tcp 80 80 0.0.0.0/0
-  nova secgroup-add-rule member tcp 80 80 0::/0
-  nova secgroup-add-rule member icmp -1 -1 0.0.0.0/0
-  nova secgroup-add-rule member icmp -1 -1 0::/0
+  openstack security group create member
+  openstack security group rule create --protocol icmp member
+  openstack security group rule create --protocol tcp --dst-port 22 member
+  openstack security group rule create --protocol tcp --dst-port 80 member
+  openstack security group rule create --protocol icmpv6 --ethertype IPv6 --remote-ip ::/0 member
+  openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 member
+  openstack security group rule create --protocol tcp --dst-port 80 --ethertype IPv6 --remote-ip ::/0 member
   PRIVATE_NETWORK=$(openstack network list | awk '/ private / {print $2}')
   openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
   openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --wait
