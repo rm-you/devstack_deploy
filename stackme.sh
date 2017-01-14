@@ -6,9 +6,9 @@ NEUTRON_LBAAS_PATCH=""
 NEUTRON_CLIENT_PATCH=""
 
 # Quick sanity check (should be run on Ubuntu 14.04 and MUST be run as root directly)
-if [ `lsb_release -rs` != "14.04" ]
+if [ `lsb_release -rs` != "14.04" ] && [ `lsb_release -rs` != "16.04" ]
 then
-  echo -n "Warning: This script is only tested against Ubuntu 14.04. Press <enter> to continue at your own risk... "
+  echo -n "Warning: This script is only tested against Ubuntu trusty/xenial. Press <enter> to continue at your own risk... "
   read
 fi
 if [ `whoami` != "root" -o -n "$SUDO_COMMAND" ]
@@ -64,6 +64,9 @@ cat >/opt/stack/.pydistutils.cfg <<EOF
 index_url = $NODEPOOL_PYPI_MIRROR
 allow_hosts = *.openstack.org
 EOF
+
+# Precreate .cache so it won't have the wrong perms
+su - stack -c 'mkdir /opt/stack/.cache'
 
 # Let's rock
 su - stack -c /opt/stack/devstack/stack.sh

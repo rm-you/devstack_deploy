@@ -27,8 +27,6 @@ ENABLED_SERVICES+=,g-api,g-reg
 ENABLED_SERVICES+=,q-svc,q-agt,q-dhcp,q-l3,q-meta,neutron
 # Enable LBaaS V2
 ENABLED_SERVICES+=,q-lbaasv2
-# Tempest
-ENABLED_SERVICES+=,tempest
 # Octavia
 ENABLED_SERVICES+=,octavia,o-api,o-cw,o-hm
 
