@@ -19,7 +19,7 @@ fi
 
 # Set up the packages we need
 apt-get update
-apt-get install git vim -y
+apt-get install git vim jq -y
 
 # Clone the devstack repo
 git clone https://github.com/openstack-dev/devstack.git /tmp/devstack
@@ -71,6 +71,9 @@ su - stack -c 'mkdir /opt/stack/.cache'
 # Let's rock
 su - stack -c /opt/stack/devstack/stack.sh
 
+# Immediately delete spurious o-hm default route
+route del default gw 192.168.0.1
+
 # Update neutron client if necessary
 if [ -n "$NEUTRON_CLIENT_PATCH" ]
 then
@@ -81,10 +84,16 @@ fi
 pip install tox
 
 # Grab utility scripts from github and add them to stack's .profile
-wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile >> /opt/stack/.profile
+wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile | sudo -u stack tee -a /opt/stack/.bash_profile
 
 # Set up barbican container
-bash <(curl -sL https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh)
+sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh -O /opt/stack/make_container.sh
+chmod +x /opt/stack/make_container.sh
+sudo su - stack -c /opt/stack/make_container.sh
+
+# Fix missing route
+ROUTER_IP=$(su - stack -c "openstack router show router1 | awk -F '|' ' / external_gateway_info / {print \$3} ' | jq -r '.external_fixed_ips[0].ip_address'")
+route add -net 10.0.0.0 netmask 255.255.255.0 gw $ROUTER_IP dev br-ex
 
 # Drop into a shell
 su - stack
