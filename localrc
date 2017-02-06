@@ -28,5 +28,5 @@ ENABLED_SERVICES+=,q-svc,q-agt,q-dhcp,q-l3,q-meta,neutron
 # Enable LBaaS V2
 ENABLED_SERVICES+=,q-lbaasv2
 # Octavia
-ENABLED_SERVICES+=,octavia,o-api,o-cw,o-hm
+ENABLED_SERVICES+=,octavia,o-api,o-cw,o-hm,o-hk
 
