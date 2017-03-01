@@ -1,9 +1,12 @@
-enable_plugin barbican https://review.openstack.org/openstack/barbican $BARBICAN_PATCH
+#GIT_BASE=http://github.com
+USE_PYTHON3=True
+
+#enable_plugin barbican https://review.openstack.org/openstack/barbican $BARBICAN_PATCH
 enable_plugin neutron-lbaas https://review.openstack.org/openstack/neutron-lbaas $NEUTRON_LBAAS_PATCH
 enable_plugin octavia https://review.openstack.org/openstack/octavia $OCTAVIA_PATCH
 LIBS_FROM_GIT+=python-neutronclient
 
-KEYSTONE_TOKEN_FORMAT=UUID
+#KEYSTONE_TOKEN_FORMAT=UUID
 HOST_IP=127.0.0.1
 
 DATABASE_PASSWORD=secretdatabase
@@ -20,7 +23,8 @@ SCREEN_LOGDIR=/opt/stack/logs
 ENABLED_SERVICES=rabbit,mysql,key
 # Nova
 ENABLED_SERVICES+=,n-api,n-crt,n-cpu,n-cond,n-sch,placement-api,placement-client
-IMAGE_URLS+=",http://download.cirros-cloud.net/0.3.3/cirros-0.3.3-x86_64-disk.img"
+#IMAGE_URLS+=",http://download.cirros-cloud.net/0.3.3/cirros-0.3.3-x86_64-disk.img"
+IMAGE_URLS+=",http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img"
 # Glance
 ENABLED_SERVICES+=,g-api,g-reg
 # Neutron

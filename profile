@@ -29,20 +29,20 @@ function gen_backend() {
   openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 member
   openstack security group rule create --protocol tcp --dst-port 80 --ethertype IPv6 --remote-ip ::/0 member
   PRIVATE_NETWORK=$(openstack network list | awk '/ private / {print $2}')
-  openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
-  openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --wait
+  openstack server create --image cirros-0.3.4-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
+  openstack server create --image cirros-0.3.4-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --wait
   sleep 15
   if [ -z "$MEMBER1_IP" ]; then
     export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
   fi
   if [ -z "$MEMBER2_IP" ]; then
-    export MEMBER2_IP=$(openstack server show member2 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ ":") print a; else print $5}')
+    export MEMBER2_IP=$(openstack server show member2 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
   fi
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER1_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member1' | sudo nc -l -p 80 ; done)&"
   ssh -o StrictHostKeyChecking=no cirros@$MEMBER2_IP "(while true; do echo -e 'HTTP/1.0 200 OK\r\n\r\nIt Works: member2' | sudo nc -l -p 80 ; done)&"
   sleep 5
   curl $MEMBER1_IP
-  curl -g "[$MEMBER2_IP]"
+  curl $MEMBER2_IP
 }
 
 # Create a LB with Neutron-LBaaS

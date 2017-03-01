@@ -38,32 +38,29 @@ cat >>/opt/stack/.profile <<EOF
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export NEUTRON_LBAAS_PATCH="$NEUTRON_LBAAS_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
-
-# Use Xenial for DIB
-DIB_RELEASE=xenial
 EOF
 
 # Use the openstack mirrors for pip
-NODEPOOL_REGION=iad
-NODEPOOL_CLOUD=rax
-NODEPOOL_MIRROR_HOST=mirror.$NODEPOOL_REGION.$NODEPOOL_CLOUD.openstack.org
-NODEPOOL_MIRROR_HOST=$(echo $NODEPOOL_MIRROR_HOST|tr '[:upper:]' '[:lower:]')
-NODEPOOL_PYPI_MIRROR=http://$NODEPOOL_MIRROR_HOST/pypi/simple
-NODEPOOL_WHEEL_MIRROR=http://$NODEPOOL_MIRROR_HOST/wheel/ubuntu-14.04-x86_64/
+#NODEPOOL_REGION=iad
+#NODEPOOL_CLOUD=rax
+#NODEPOOL_MIRROR_HOST=mirror.$NODEPOOL_REGION.$NODEPOOL_CLOUD.openstack.org
+#NODEPOOL_MIRROR_HOST=$(echo $NODEPOOL_MIRROR_HOST|tr '[:upper:]' '[:lower:]')
+#NODEPOOL_PYPI_MIRROR=http://$NODEPOOL_MIRROR_HOST/pypi/simple
+#NODEPOOL_WHEEL_MIRROR=http://$NODEPOOL_MIRROR_HOST/wheel/ubuntu-14.04-x86_64/
 
-cat >/etc/pip.conf <<EOF
-[global]
-timeout = 60
-index-url = $NODEPOOL_PYPI_MIRROR
-trusted-host = $NODEPOOL_MIRROR_HOST
-extra-index-url = $NODEPOOL_WHEEL_MIRROR
-EOF
+#cat >/etc/pip.conf <<EOF
+#[global]
+#timeout = 60
+#index-url = $NODEPOOL_PYPI_MIRROR
+#trusted-host = $NODEPOOL_MIRROR_HOST
+#extra-index-url = $NODEPOOL_WHEEL_MIRROR
+#EOF
 
-cat >/opt/stack/.pydistutils.cfg <<EOF
-[easy_install]
-index_url = $NODEPOOL_PYPI_MIRROR
-allow_hosts = *.openstack.org
-EOF
+#cat >/opt/stack/.pydistutils.cfg <<EOF
+#[easy_install]
+#index_url = $NODEPOOL_PYPI_MIRROR
+#allow_hosts = *.openstack.org
+#EOF
 
 # Precreate .cache so it won't have the wrong perms
 su - stack -c 'mkdir /opt/stack/.cache'
@@ -72,6 +69,7 @@ su - stack -c 'mkdir /opt/stack/.cache'
 su - stack -c /opt/stack/devstack/stack.sh
 
 # Immediately delete spurious o-hm default route
+route > ~/routes.log
 route del default gw 192.168.0.1
 
 # Update neutron client if necessary
@@ -87,9 +85,9 @@ pip install tox
 wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile | sudo -u stack tee -a /opt/stack/.bash_profile
 
 # Set up barbican container
-sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh -O /opt/stack/make_container.sh
-chmod +x /opt/stack/make_container.sh
-sudo su - stack -c /opt/stack/make_container.sh
+#sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh -O /opt/stack/make_container.sh
+#chmod +x /opt/stack/make_container.sh
+#sudo su - stack -c /opt/stack/make_container.sh
 
 # Fix missing route
 ROUTER_IP=$(su - stack -c "openstack router show router1 | awk -F '|' ' / external_gateway_info / {print \$3} ' | jq -r '.external_fixed_ips[0].ip_address'")
