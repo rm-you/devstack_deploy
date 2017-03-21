@@ -1,5 +1,5 @@
 #GIT_BASE=http://github.com
-USE_PYTHON3=True
+#USE_PYTHON3=True
 
 #enable_plugin barbican https://review.openstack.org/openstack/barbican $BARBICAN_PATCH
 enable_plugin neutron-lbaas https://review.openstack.org/openstack/neutron-lbaas $NEUTRON_LBAAS_PATCH

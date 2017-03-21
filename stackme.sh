@@ -40,28 +40,6 @@ export NEUTRON_LBAAS_PATCH="$NEUTRON_LBAAS_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 EOF
 
-# Use the openstack mirrors for pip
-#NODEPOOL_REGION=iad
-#NODEPOOL_CLOUD=rax
-#NODEPOOL_MIRROR_HOST=mirror.$NODEPOOL_REGION.$NODEPOOL_CLOUD.openstack.org
-#NODEPOOL_MIRROR_HOST=$(echo $NODEPOOL_MIRROR_HOST|tr '[:upper:]' '[:lower:]')
-#NODEPOOL_PYPI_MIRROR=http://$NODEPOOL_MIRROR_HOST/pypi/simple
-#NODEPOOL_WHEEL_MIRROR=http://$NODEPOOL_MIRROR_HOST/wheel/ubuntu-14.04-x86_64/
-
-#cat >/etc/pip.conf <<EOF
-#[global]
-#timeout = 60
-#index-url = $NODEPOOL_PYPI_MIRROR
-#trusted-host = $NODEPOOL_MIRROR_HOST
-#extra-index-url = $NODEPOOL_WHEEL_MIRROR
-#EOF
-
-#cat >/opt/stack/.pydistutils.cfg <<EOF
-#[easy_install]
-#index_url = $NODEPOOL_PYPI_MIRROR
-#allow_hosts = *.openstack.org
-#EOF
-
 # Precreate .cache so it won't have the wrong perms
 su - stack -c 'mkdir /opt/stack/.cache'
 
