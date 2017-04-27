@@ -1,10 +1,10 @@
 #!/bin/bash
 
-OCTAVIA_PATCH=""
-OCTAVIA_CLIENT_PATCH=""
+OCTAVIA_PATCH="refs/changes/47/382147/39" # Temporarily use Paging/Sorting as default patch
+OCTAVIA_CLIENT_PATCH="refs/changes/16/454516/8" # Temporarily use LB Commands as default patch
 BARBICAN_PATCH=""
-NEUTRON_LBAAS_PATCH=""
-NEUTRON_CLIENT_PATCH=""
+#NEUTRON_LBAAS_PATCH=""
+#NEUTRON_CLIENT_PATCH=""
 
 # Quick sanity check (should be run on Ubuntu 14.04 and MUST be run as root directly)
 if [ `lsb_release -rs` != "14.04" ] && [ `lsb_release -rs` != "16.04" ]
@@ -52,10 +52,10 @@ route > ~/routes.log
 route del default gw 192.168.0.1
 
 # Update neutron client if necessary
-if [ -n "$NEUTRON_CLIENT_PATCH" ]
-then
-    su - stack -c "cd python-neutronclient && git fetch https://review.openstack.org/openstack/python-neutronclient $NEUTRON_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
-fi
+#if [ -n "$NEUTRON_CLIENT_PATCH" ]
+#then
+#    su - stack -c "cd python-neutronclient && git fetch https://review.openstack.org/openstack/python-neutronclient $NEUTRON_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
+#fi
 
 # Update octavia client if necessary
 if [ -n "$OCTAVIA_CLIENT_PATCH" ]
@@ -70,9 +70,9 @@ pip install tox
 wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile | sudo -u stack tee -a /opt/stack/.bash_profile
 
 # Set up barbican container
-#sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh -O /opt/stack/make_container.sh
-#chmod +x /opt/stack/make_container.sh
-#sudo su - stack -c /opt/stack/make_container.sh
+sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh -O /opt/stack/make_container.sh
+chmod +x /opt/stack/make_container.sh
+sudo su - stack -c /opt/stack/make_container.sh
 
 # Fix missing route
 ROUTER_IP=$(su - stack -c "openstack router show router1 | awk -F '|' ' / external_gateway_info / {print \$3} ' | jq -r '.external_fixed_ips[0].ip_address'")
