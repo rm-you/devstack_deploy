@@ -4,7 +4,7 @@
 #enable_plugin barbican https://review.openstack.org/openstack/barbican $BARBICAN_PATCH
 enable_plugin neutron-lbaas https://review.openstack.org/openstack/neutron-lbaas $NEUTRON_LBAAS_PATCH
 enable_plugin octavia https://review.openstack.org/openstack/octavia $OCTAVIA_PATCH
-LIBS_FROM_GIT+=python-neutronclient
+LIBS_FROM_GIT+=python-neutronclient,python-octaviaclient
 
 #KEYSTONE_TOKEN_FORMAT=UUID
 HOST_IP=127.0.0.1

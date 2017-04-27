@@ -1,7 +1,8 @@
 #!/bin/bash
 
-BARBICAN_PATCH=""
 OCTAVIA_PATCH=""
+OCTAVIA_CLIENT_PATCH=""
+BARBICAN_PATCH=""
 NEUTRON_LBAAS_PATCH=""
 NEUTRON_CLIENT_PATCH=""
 
@@ -54,6 +55,12 @@ route del default gw 192.168.0.1
 if [ -n "$NEUTRON_CLIENT_PATCH" ]
 then
     su - stack -c "cd python-neutronclient && git fetch https://review.openstack.org/openstack/python-neutronclient $NEUTRON_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
+fi
+
+# Update octavia client if necessary
+if [ -n "$OCTAVIA_CLIENT_PATCH" ]
+then
+    su - stack -c "cd python-octaviaclient && git fetch https://review.openstack.org/openstack/python-octaviaclient $OCTAVIA_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
 fi
 
 # Install tox globally
