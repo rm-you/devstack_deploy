@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OCTAVIA_PATCH="refs/changes/47/382147/39" # Temporarily use Paging/Sorting as default patch
+OCTAVIA_PATCH="refs/changes/99/460499/3" # Temporarily use Paging/Sorting as default patch
 OCTAVIA_CLIENT_PATCH="refs/changes/16/454516/8" # Temporarily use LB Commands as default patch
 BARBICAN_PATCH=""
 #NEUTRON_LBAAS_PATCH=""
@@ -39,6 +39,7 @@ cat >>/opt/stack/.profile <<EOF
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export NEUTRON_LBAAS_PATCH="$NEUTRON_LBAAS_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
+export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
 EOF
 
 # Precreate .cache so it won't have the wrong perms
@@ -56,12 +57,6 @@ route del default gw 192.168.0.1
 #then
 #    su - stack -c "cd python-neutronclient && git fetch https://review.openstack.org/openstack/python-neutronclient $NEUTRON_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
 #fi
-
-# Update octavia client if necessary
-if [ -n "$OCTAVIA_CLIENT_PATCH" ]
-then
-    su - stack -c "cd python-octaviaclient && git fetch https://review.openstack.org/openstack/python-octaviaclient $OCTAVIA_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
-fi
 
 # Install tox globally
 pip install tox
