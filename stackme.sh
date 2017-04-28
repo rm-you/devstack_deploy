@@ -3,8 +3,6 @@
 OCTAVIA_PATCH="refs/changes/99/460499/3" # Temporarily use Paging/Sorting as default patch
 OCTAVIA_CLIENT_PATCH="refs/changes/16/454516/8" # Temporarily use LB Commands as default patch
 BARBICAN_PATCH=""
-#NEUTRON_LBAAS_PATCH=""
-#NEUTRON_CLIENT_PATCH=""
 
 # Quick sanity check (should be run on Ubuntu 14.04 and MUST be run as root directly)
 if [ `lsb_release -rs` != "14.04" ] && [ `lsb_release -rs` != "16.04" ]
@@ -37,7 +35,6 @@ chown -R stack:stack /opt/stack/devstack/
 cat >>/opt/stack/.profile <<EOF
 # Prepare patches for localrc
 export BARBICAN_PATCH="$BARBICAN_PATCH"
-export NEUTRON_LBAAS_PATCH="$NEUTRON_LBAAS_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
 EOF
@@ -51,12 +48,6 @@ su - stack -c /opt/stack/devstack/stack.sh
 # Immediately delete spurious o-hm default route
 route > ~/routes.log
 route del default gw 192.168.0.1
-
-# Update neutron client if necessary
-#if [ -n "$NEUTRON_CLIENT_PATCH" ]
-#then
-#    su - stack -c "cd python-neutronclient && git fetch https://review.openstack.org/openstack/python-neutronclient $NEUTRON_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
-#fi
 
 # Install tox globally
 pip install tox

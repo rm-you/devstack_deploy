@@ -1,6 +1,10 @@
 # Fix permissions on current tty so screens can attach
 sudo chmod go+rw `tty`
 
+# Make sure we have git configured for cherry-picks
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+
 # Add environment variables for auth/endpoints
 source /opt/stack/devstack/openrc admin admin >/dev/null
 export BARBICAN_ENDPOINT="http://localhost:9311"
