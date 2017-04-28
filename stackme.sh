@@ -1,13 +1,13 @@
 #!/bin/bash
 
-OCTAVIA_PATCH="refs/changes/99/460499/3" # Temporarily use Paging/Sorting as default patch
-OCTAVIA_CLIENT_PATCH="refs/changes/16/454516/8" # Temporarily use LB Commands as default patch
+OCTAVIA_PATCH=""
+OCTAVIA_CLIENT_PATCH=""
 BARBICAN_PATCH=""
 
-# Quick sanity check (should be run on Ubuntu 14.04 and MUST be run as root directly)
-if [ `lsb_release -rs` != "14.04" ] && [ `lsb_release -rs` != "16.04" ]
+# Quick sanity check (should be run on Ubuntu 16.04 and MUST be run as root directly)
+if [ `lsb_release -rs` != "16.04" ]
 then
-  echo -n "Warning: This script is only tested against Ubuntu trusty/xenial. Press <enter> to continue at your own risk... "
+  echo -n "Warning: This script is only tested against Ubuntu xenial. Press <enter> to continue at your own risk... "
   read
 fi
 if [ `whoami` != "root" -o -n "$SUDO_COMMAND" ]
@@ -50,13 +50,13 @@ route > ~/routes.log
 route del default gw 192.168.0.1
 
 # Install tox globally
-pip install tox
+pip install tox &> /dev/null
 
 # Grab utility scripts from github and add them to stack's .profile
-wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile | sudo -u stack tee -a /opt/stack/.bash_profile
+wget -q -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile | sudo -u stack cat >> /opt/stack/.bash_profile
 
 # Set up barbican container
-sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh -O /opt/stack/make_container.sh
+sudo -u stack wget -q https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh -O /opt/stack/make_container.sh
 chmod +x /opt/stack/make_container.sh
 sudo su - stack -c /opt/stack/make_container.sh
 
