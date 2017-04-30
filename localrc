@@ -19,7 +19,6 @@ SCREEN_LOGDIR=/opt/stack/logs
 ENABLED_SERVICES=rabbit,mysql,key
 # Nova
 ENABLED_SERVICES+=,n-api,n-crt,n-cpu,n-cond,n-sch,placement-api,placement-client
-IMAGE_URLS+=",http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img"
 # Glance
 ENABLED_SERVICES+=,g-api,g-reg
 # Neutron
