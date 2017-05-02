@@ -53,7 +53,7 @@ route del default gw 192.168.0.1
 pip install tox &> /dev/null
 
 # Grab utility scripts from github and add them to stack's .profile
-wget -q -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile | sudo -u stack cat >> /opt/stack/.bash_profile
+wget -q -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile | sudo -u stack tee -a /opt/stack/.bash_profile > /dev/null
 
 # Set up barbican container
 sudo -u stack wget -q https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh -O /opt/stack/make_container.sh
