@@ -5,6 +5,9 @@ LIBS_FROM_GIT+=python-octaviaclient
 #KEYSTONE_TOKEN_FORMAT=UUID
 HOST_IP=127.0.0.1
 
+# systemd is really not good for dev so use screen
+USE_SCREEN=True
+
 DATABASE_PASSWORD=secretdatabase
 RABBIT_PASSWORD=secretrabbit
 ADMIN_PASSWORD=secretadmin
