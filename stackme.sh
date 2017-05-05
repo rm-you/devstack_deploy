@@ -37,6 +37,8 @@ cat >>/opt/stack/.profile <<EOF
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
+
+export OCTAVIA_USE_MOD_WSGI=False
 EOF
 
 # Precreate .cache so it won't have the wrong perms
