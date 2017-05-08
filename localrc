@@ -1,4 +1,5 @@
 enable_plugin barbican https://review.openstack.org/openstack/barbican $BARBICAN_PATCH
+enable_plugin neutron-lbaas https://review.openstack.org/openstack/neutron-lbaas
 enable_plugin octavia https://review.openstack.org/openstack/octavia $OCTAVIA_PATCH
 LIBS_FROM_GIT+=python-octaviaclient
 
@@ -26,6 +27,8 @@ ENABLED_SERVICES+=,n-api,n-cpu,n-cond,n-sch,placement-api,placement-client
 ENABLED_SERVICES+=,g-api,g-reg
 # Neutron
 ENABLED_SERVICES+=,q-svc,q-agt,q-dhcp,q-l3,q-meta,neutron
+# Enable LBaaS V2
+ENABLED_SERVICES+=,q-lbaasv2
 # Octavia
 ENABLED_SERVICES+=,octavia,o-api,o-cw,o-hm,o-hk
 
