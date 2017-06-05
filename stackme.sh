@@ -28,6 +28,9 @@ wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/localr
 # Create the stack user
 /tmp/devstack/tools/create-stack-user.sh
 
+# Apparently the group for libvirt changed to libvirtd in parallels?
+usermod -a -G libvirtd stack
+
 # Move everything into place
 mv /tmp/devstack /opt/stack/
 chown -R stack:stack /opt/stack/devstack/
