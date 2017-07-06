@@ -40,16 +40,10 @@ cat >>/opt/stack/.profile <<EOF
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
-
-export OCTAVIA_USE_MOD_WSGI=False
 EOF
 
 # Precreate .cache so it won't have the wrong perms
 su - stack -c 'mkdir /opt/stack/.cache'
-
-# Install non-broken ubuntu qemu packages
-apt-get install -y seabios=1.8.2-1ubuntu1 qemu-system-sparc=1:2.5+dfsg-5ubuntu10.11 qemu-system-ppc=1:2.5+dfsg-5ubuntu10.11 qemu-system-arm=1:2.5+dfsg-5ubuntu10.11 qemu-kvm=1:2.5+dfsg-5ubuntu10.11 qemu-system-x86=1:2.5+dfsg-5ubuntu10.11 qemu-system-mips=1:2.5+dfsg-5ubuntu10.11 qemu-system-misc=1:2.5+dfsg-5ubuntu10.11
-apt-mark hold seabios qemu-system-sparc qemu-system-ppc qemu-system-arm qemu-kvm qemu-system-x86 qemu-system-mips qemu-system-misc
 
 # Let's rock
 su - stack -c /opt/stack/devstack/stack.sh

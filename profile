@@ -49,41 +49,41 @@ function gen_backend() {
   curl $MEMBER2_IP
 }
 
-# Create a LB with Neutron-LBaaS
+# Create a LB with Octavia
 function create_lb() {
-  neutron lbaas-loadbalancer-create $DEFAULT_NETWORK --name lb1
-  watch neutron lbaas-loadbalancer-show lb1
+  openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK
+  watch openstack loadbalancer show lb1
 }
 
 function create_lb_ipv6() {
-  neutron lbaas-loadbalancer-create $DEFAULT_NETWORK_IPV6 --name lb1
-  watch neutron lbaas-loadbalancer-show lb1
+  openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK_IPV6
+  watch openstack loadbalancer show lb1
 }
 
-# Create a Listener with Neutron-LBaaS
+# Create a Listener with Octavia
 function create_listener() {
-  neutron lbaas-listener-create --loadbalancer lb1 --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$DEFAULT_TLS_CONTAINER
-  watch neutron lbaas-loadbalancer-show lb1
+  openstack loadbalancer listener create --protocol TERMINATED_HTTPS --protocol-port 443 --name listener1 --default-tls-container-ref $DEFAULT_TLS_CONTAINER lb1
+  watch openstack loadbalancer show lb1
 }
 
-# Create a Pool with Neutron-LBaaS
+# Create a Pool with Octavia
 function create_pool() {
-  neutron lbaas-pool-create --name pool1 --protocol HTTP --listener listener1 --lb-algorithm ROUND_ROBIN
-  watch neutron lbaas-loadbalancer-show lb1
+  openstack loadbalancer pool create --protocol HTTP --lb-algorithm ROUND_ROBIN --name pool1 --listener listener1
+  watch openstack loadbalancer show lb1
 }
 
-# Create Members with Neutron-LBaaS
+# Create Members with Octavia
 function create_members() {
   # Get member ips again because we might be in a different shell
   if [ -z "$MEMBER1_IP" ]; then
     export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
   fi
-  neutron lbaas-member-create pool1 --address $MEMBER1_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') --name member1
+  openstack loadbalancer member create --address  $MEMBER1_IP --protocol-port 80 --subnet-id $(openstack subnet list | awk '/ private-subnet / {print $2}') --name member1 pool1
   if [ -z "$MEMBER2_IP" ]; then
     # Get the second memberIP while we're waiting anyway
     export MEMBER2_IP=$(openstack server show member2 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ ":") print a; else print $5}')
   fi
-  watch neutron lbaas-loadbalancer-show lb1  # TODO: Make a proper wait, right now just assumes you will ctrl-c when ready
-  neutron lbaas-member-create pool1 --address $MEMBER2_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ ipv6-private-subnet / {print $2}') --name member2
+  watch openstack loadbalancer show lb1 # TODO: Make a proper wait, right now just assumes you will ctrl-c when ready
+  openstack loadbalancer member create --address  $MEMBER2_IP --protocol-port 80 --subnet-id $(openstack subnet list | awk '/ private-subnet / {print $2}') --name member2 pool1
 }
 
