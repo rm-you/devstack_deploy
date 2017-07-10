@@ -23,7 +23,7 @@ apt-get install git vim jq -y
 # Clone the devstack repo
 git clone https://github.com/openstack-dev/devstack.git /tmp/devstack
 
-wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/localrc > /tmp/devstack/localrc
+wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/local.conf > /tmp/devstack/local.conf
 
 # Create the stack user
 /tmp/devstack/tools/create-stack-user.sh
@@ -36,7 +36,7 @@ mv /tmp/devstack /opt/stack/
 chown -R stack:stack /opt/stack/devstack/
 
 cat >>/opt/stack/.profile <<EOF
-# Prepare patches for localrc
+# Prepare patches for local.conf
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
