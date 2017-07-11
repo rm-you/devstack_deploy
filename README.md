@@ -7,7 +7,7 @@ stackme.sh
 * Must run as root
 * Edit variables at the top to select patchsets
 
-localrc
+local.conf
 -------
 * The devstack configuration to use
 
