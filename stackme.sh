@@ -4,32 +4,33 @@ OCTAVIA_PATCH=""
 OCTAVIA_CLIENT_PATCH=""
 BARBICAN_PATCH=""
 
-# Quick sanity check (should be run on Ubuntu 16.04 and MUST be run as root directly)
-if [ `lsb_release -rs` != "16.04" ]
-then
-  echo -n "Warning: This script is only tested against Ubuntu xenial. Press <enter> to continue at your own risk... "
-  read
-fi
-if [ `whoami` != "root" -o -n "$SUDO_COMMAND" ]
-then
-  echo "This script must be run as root, and not using 'sudo'!"
-  exit 1
-fi
+# Centos mirrors are broken inside GD, use some upstream mirror
+cat << EOF > /etc/yum.repos.d/CentOS-Base.repo
+[CentOS-Base]
+name=CentOS-Base
+baseurl=http://centos-distro.1gservers.com/7/os/x86_64/
+enabled=True
+gpgcheck=False
+EOF
 
-# Set up the packages we need
-apt-get update
-apt-get install git vim jq -y
+# Centos also has an ANCIENT version of git, grab a new version from some random repo
+yum -y install http://opensource.wandisco.com/centos/6/git/x86_64/wandisco-git-release-6-1.noarch.rpm
+yum -y update git
+
+# Install python-pip because we need it for stacking
+yum -y install python-pip
 
 # Clone the devstack repo
 git clone https://github.com/openstack-dev/devstack.git /tmp/devstack
 
-wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/local.conf > /tmp/devstack/local.conf
+# Centos 7 needs sudo for screen_process sg
+sed -i 's/command="sg /command="sudo sg /' /tmp/devstack/functions-common
+
+# Set up our localrc for devstack
+wget -O /tmp/devstack/local.conf https://raw.githubusercontent.com/rm-you/devstack_deploy/centos_new/local.conf
 
 # Create the stack user
 /tmp/devstack/tools/create-stack-user.sh
-
-# Apparently the group for libvirt changed to libvirtd in parallels?
-usermod -a -G libvirtd stack
 
 # Move everything into place
 mv /tmp/devstack /opt/stack/
@@ -42,21 +43,27 @@ export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
 EOF
 
+# Fix centos 7 issue with iptables
+touch /etc/sysconfig/iptables
+
+# Fix ipv6 support
+sed -i 's/net.ipv6.conf.all.disable_ipv6=1/net.ipv6.conf.all.disable_ipv6=0/' /etc/sysctl.conf
+sed -i 's/net.ipv6.conf.default.disable_ipv6=1/net.ipv6.conf.default.disable_ipv6=0/' /etc/sysctl.conf
+sed -i 's/net.ipv6.conf.lo.disable_ipv6=1/net.ipv6.conf.lo.disable_ipv6=0/' /etc/sysctl.conf
+sysctl -p /etc/sysctl.conf
+echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
+
 # Precreate .cache so it won't have the wrong perms
 su - stack -c 'mkdir /opt/stack/.cache'
 
 # Let's rock
 su - stack -c /opt/stack/devstack/stack.sh
 
-# Immediately delete spurious o-hm default route
-route > ~/routes.log
-route del default gw 192.168.0.1
-
 # Install tox globally
 pip install tox &> /dev/null
 
 # Grab utility scripts from github and add them to stack's .profile
-wget -q -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile | sudo -u stack tee -a /opt/stack/.bash_profile > /dev/null
+wget -q -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/centos_new/profile | sudo -u stack tee -a /opt/stack/.bash_profile > /dev/null
 
 # Set up barbican container
 sudo -u stack wget -q https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh -O /opt/stack/make_container.sh
