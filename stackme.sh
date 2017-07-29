@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OCTAVIA_PATCH=""
+OCTAVIA_PATCH="refs/changes/71/487671/6"
 OCTAVIA_CLIENT_PATCH=""
 BARBICAN_PATCH=""
 
@@ -40,6 +40,7 @@ cat >>/opt/stack/.profile <<EOF
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
+export OCTAVIA_AMP_BASE_OS="centos"
 EOF
 
 # Precreate .cache so it won't have the wrong perms
@@ -50,7 +51,7 @@ su - stack -c /opt/stack/devstack/stack.sh
 
 # Immediately delete spurious o-hm default route
 route > ~/routes.log
-route del default gw 192.168.0.1
+route del default gw 192.168.0.1 &> /dev/null
 
 # Install tox globally
 pip install tox &> /dev/null
