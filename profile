@@ -72,6 +72,12 @@ function create_pool() {
   watch openstack loadbalancer show lb1
 }
 
+# Create a Health Monitor with Octavia
+function create_hm() {
+  openstack loadbalancer healthmonitor create --delay 5 --timeout 5 --max-retries 3 --type HTTP --name hm1 pool1
+  watch openstack loadbalancer show lb1
+}
+
 # Create Members with Octavia
 function create_members() {
   # Get member ips again because we might be in a different shell
