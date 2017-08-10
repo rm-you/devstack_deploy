@@ -49,33 +49,52 @@ function gen_backend() {
   curl $MEMBER2_IP
 }
 
+# Wait for LB to go ACTIVE
+function wait_for_status() {
+  STATUS=${1:-"ACTIVE"}
+  echo -n "Waiting for lb1 to go ACTIVE..."
+  LB1=$(openstack loadbalancer show lb1 -f json | jq -r .provisioning_status)
+  while [ "$LB1" != "$STATUS" ]; do
+    if [ "$LB1" == "ERROR" ]; then
+      echo " ERROR!"
+      return 1
+    fi
+    echo -n "."
+    sleep 1
+    LB1=$(openstack loadbalancer show lb1 -f json | jq -r .provisioning_status)
+  done
+  echo
+}
+
 # Create a LB with Octavia
 function create_lb() {
   openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK
-  watch openstack loadbalancer show lb1
+  wait_for_status
+  openstack loadbalancer show lb1
 }
 
 function create_lb_ipv6() {
   openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK_IPV6
-  watch openstack loadbalancer show lb1
+  wait_for_status
+  openstack loadbalancer show lb1
 }
 
 # Create a Listener with Octavia
 function create_listener() {
   openstack loadbalancer listener create --protocol TERMINATED_HTTPS --protocol-port 443 --name listener1 --default-tls-container-ref $DEFAULT_TLS_CONTAINER lb1
-  watch openstack loadbalancer show lb1
+  wait_for_status
 }
 
 # Create a Pool with Octavia
 function create_pool() {
   openstack loadbalancer pool create --protocol HTTP --lb-algorithm ROUND_ROBIN --name pool1 --listener listener1
-  watch openstack loadbalancer show lb1
+  wait_for_status
 }
 
 # Create a Health Monitor with Octavia
 function create_hm() {
   openstack loadbalancer healthmonitor create --delay 5 --timeout 5 --max-retries 3 --type HTTP --name hm1 pool1
-  watch openstack loadbalancer show lb1
+  wait_for_status
 }
 
 # Create Members with Octavia
@@ -89,7 +108,25 @@ function create_members() {
     # Get the second memberIP while we're waiting anyway
     export MEMBER2_IP=$(openstack server show member2 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ ":") print a; else print $5}')
   fi
-  watch openstack loadbalancer show lb1 # TODO: Make a proper wait, right now just assumes you will ctrl-c when ready
+  wait_for_status
   openstack loadbalancer member create --address  $MEMBER2_IP --protocol-port 80 --subnet-id $(openstack subnet list | awk '/ private-subnet / {print $2}') --name member2 pool1
+  wait_for_status
+}
+
+# Do everything
+function create_full() {
+  echo "Generating backend member nodes:"
+  gen_backend
+  echo "Creating lb1:"
+  create_lb
+  echo "Creating listener1:"
+  create_listener
+  echo "Creating pool1:"
+  create_pool
+  echo "Creating hm1:"
+  create_hm
+  echo "Creating member1 and member2:"
+  create_members
+  echo "Done!"
 }
 
