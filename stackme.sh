@@ -1,7 +1,9 @@
 #!/bin/bash
 
 OCTAVIA_PATCH=""
+OCTAVIA_DASHBOARD_PATCH="refs/changes/42/497642/1"
 OCTAVIA_CLIENT_PATCH=""
+NEUTRON_LBAAS_PATCH=""
 BARBICAN_PATCH=""
 
 # Quick sanity check (should be run on Ubuntu 16.04 and MUST be run as root directly)
@@ -23,7 +25,7 @@ apt-get install git vim jq -y
 # Clone the devstack repo
 git clone https://github.com/openstack-dev/devstack.git /tmp/devstack
 
-wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/local.conf > /tmp/devstack/local.conf
+wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/oct_dash/local.conf > /tmp/devstack/local.conf
 
 # Create the stack user
 /tmp/devstack/tools/create-stack-user.sh
@@ -39,6 +41,8 @@ cat >>/opt/stack/.profile <<EOF
 # Prepare patches for local.conf
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
+export OCTAVIA_DASHBOARD_PATCH="$OCTAVIA_DASHBOARD_PATCH"
+export NEUTRON_LBAAS_PATH="$NEUTRON_LBAAS_PATCH"
 export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
 export OCTAVIA_AMP_BASE_OS="centos"
 EOF
@@ -57,10 +61,10 @@ route del default gw 192.168.0.1 &> /dev/null
 pip install tox &> /dev/null
 
 # Grab utility scripts from github and add them to stack's .profile
-wget -q -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/profile | sudo -u stack tee -a /opt/stack/.bash_profile > /dev/null
+wget -q -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/oct_dash/profile | sudo -u stack tee -a /opt/stack/.bash_profile > /dev/null
 
 # Set up barbican container
-sudo -u stack wget -q https://raw.githubusercontent.com/rm-you/devstack_deploy/master/make_container.sh -O /opt/stack/make_container.sh
+sudo -u stack wget -q https://raw.githubusercontent.com/rm-you/devstack_deploy/oct_dash/make_container.sh -O /opt/stack/make_container.sh
 chmod +x /opt/stack/make_container.sh
 sudo su - stack -c /opt/stack/make_container.sh
 
