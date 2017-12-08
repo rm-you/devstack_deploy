@@ -1,9 +1,13 @@
 # Fix permissions on current tty so screens can attach
 sudo chmod go+rw `tty`
 
+# Make sure we have git configured for cherry-picks
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+
 # Add environment variables for auth/endpoints
 source /opt/stack/devstack/openrc admin admin >/dev/null
-#export BARBICAN_ENDPOINT="http://localhost:9311"
+export BARBICAN_ENDPOINT="http://localhost:9311"
 
 # Set some utility variables
 PROJECT_ID=$(openstack token issue | awk '/ project_id / {print $4}')
@@ -28,8 +32,8 @@ function gen_backend() {
   openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 member
   openstack security group rule create --protocol tcp --dst-port 80 --ethertype IPv6 --remote-ip ::/0 member
   PRIVATE_NETWORK=$(openstack network list | awk '/ private / {print $2}')
-  openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
-  openstack server create --image cirros-0.3.3-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --wait
+  openstack server create --image cirros-0.3.5-x86_64-disk --flavor 1 --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
+  openstack server create --image cirros-0.3.5-x86_64-disk --flavor 1 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --wait
   sleep 15
   if [ -z "$MEMBER1_IP" ]; then
     export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
@@ -44,37 +48,78 @@ function gen_backend() {
   curl $MEMBER2_IP
 }
 
-# Create a LB with Neutron-LBaaS
+# Wait for LB to go ACTIVE
+function wait_for_status() {
+  STATUS=${1:-"ACTIVE"}
+  echo -n "Waiting for lb1 to go ACTIVE..."
+  LB1=$(openstack loadbalancer show lb1 -f json | jq -r .provisioning_status)
+  while [ "$LB1" != "$STATUS" ]; do
+    if [ "$LB1" == "ERROR" ]; then
+      echo " ERROR!"
+      return 1
+    fi
+    echo -n "."
+    sleep 1
+    LB1=$(openstack loadbalancer show lb1 -f json | jq -r .provisioning_status)
+  done
+  echo
+}
+
+# Create a LB with Octavia
 function create_lb() {
-  neutron lbaas-loadbalancer-create $DEFAULT_NETWORK --name lb1
-  watch neutron lbaas-loadbalancer-show lb1
+  openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK
+  wait_for_status
+  openstack loadbalancer show lb1
 }
 
-# Create a Listener with Neutron-LBaaS
+# Create a Listener with Octavia
 function create_listener() {
-  #neutron lbaas-listener-create --loadbalancer lb1 --protocol-port 443 --protocol TERMINATED_HTTPS --name listener1 --default-tls-container=$DEFAULT_TLS_CONTAINER
-  neutron lbaas-listener-create --loadbalancer lb1 --protocol-port 80 --protocol HTTP --name listener1
-  watch neutron lbaas-loadbalancer-show lb1
+  openstack loadbalancer listener create --protocol TERMINATED_HTTPS --protocol-port 443 --name listener1 --default-tls-container-ref $DEFAULT_TLS_CONTAINER lb1
+  wait_for_status
 }
 
-# Create a Pool with Neutron-LBaaS
+# Create a Pool with Octavia
 function create_pool() {
-  neutron lbaas-pool-create --name pool1 --protocol HTTP --listener listener1 --lb-algorithm ROUND_ROBIN
-  watch neutron lbaas-loadbalancer-show lb1
+  openstack loadbalancer pool create --protocol HTTP --lb-algorithm ROUND_ROBIN --name pool1 --listener listener1
+  wait_for_status
 }
 
-# Create Members with Neutron-LBaaS
+# Create a Health Monitor with Octavia
+function create_hm() {
+  openstack loadbalancer healthmonitor create --delay 5 --timeout 5 --max-retries 3 --type HTTP --name hm1 pool1
+  wait_for_status
+}
+
+# Create Members with Octavia
 function create_members() {
   # Get member ips again because we might be in a different shell
   if [ -z "$MEMBER1_IP" ]; then
     export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
   fi
-  neutron lbaas-member-create pool1 --address $MEMBER1_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') --name member1
+  openstack loadbalancer member create --address  $MEMBER1_IP --protocol-port 80 --subnet-id $(openstack subnet list | awk '/ private-subnet / {print $2}') --name member1 pool1
   if [ -z "$MEMBER2_IP" ]; then
     # Get the second memberIP while we're waiting anyway
     export MEMBER2_IP=$(openstack server show member2 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
   fi
-  watch neutron lbaas-loadbalancer-show lb1  # TODO: Make a proper wait, right now just assumes you will ctrl-c when ready
-  neutron lbaas-member-create pool1 --address $MEMBER2_IP --protocol-port 80 --subnet $(neutron subnet-list | awk '/ private-subnet / {print $2}') --name member2
+  wait_for_status
+  openstack loadbalancer member create --address  $MEMBER2_IP --protocol-port 80 --subnet-id $(openstack subnet list | awk '/ private-subnet / {print $2}') --name member2 pool1
+  wait_for_status
+}
+
+# Do everything
+function create_full() {
+  echo "Generating backend member nodes:"
+  gen_backend
+  echo "Creating lb1:"
+  create_lb
+  echo "Creating listener1:"
+  create_listener
+  echo "Creating pool1:"
+  create_pool
+  echo "Creating hm1:"
+  create_hm
+  echo "Creating member1 and member2:"
+  create_members
+  echo "Done!"
 }
 

@@ -1,10 +1,8 @@
-#!/bin/bash -x
+#!/bin/bash
 
-#BARBICAN_PATCH=""
 OCTAVIA_PATCH=""
-NEUTRON_LBAAS_PATCH=""
-NEUTRON_CLIENT_PATCH=""
-DIB_PATCH=""
+OCTAVIA_CLIENT_PATCH=""
+BARBICAN_PATCH=""
 
 # Centos mirrors are broken inside GD, use some upstream mirror
 cat << EOF > /etc/yum.repos.d/CentOS-Base.repo
@@ -29,7 +27,7 @@ git clone https://github.com/openstack-dev/devstack.git /tmp/devstack
 sed -i 's/command="sg /command="sudo sg /' /tmp/devstack/functions-common
 
 # Set up our localrc for devstack
-wget -O /tmp/devstack/localrc https://raw.githubusercontent.com/rm-you/devstack_deploy/master/localrc
+wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/local.conf > /tmp/devstack/local.conf
 
 # Create the stack user
 /tmp/devstack/tools/create-stack-user.sh
@@ -41,12 +39,13 @@ chown -R stack:stack /opt/stack/devstack/
 cat <<EOF | sudo -u stack tee -a /opt/stack/.bash_profile > /dev/null
 # Prepare patches for localrc
 #export BARBICAN_PATCH="$BARBICAN_PATCH"
-export NEUTRON_LBAAS_PATCH="$NEUTRON_LBAAS_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
-
-# Use Xenial for DIB
-export DIB_RELEASE=xenial
+export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
+export OCTAVIA_AMP_BASE_OS="centos"
 EOF
+
+# Precreate .cache so it won't have the wrong perms
+su - stack -c 'mkdir /opt/stack/.cache'
 
 # Fix centos 7 issue with iptables
 touch /etc/sysconfig/iptables
@@ -71,22 +70,16 @@ echo "Press enter to ROCK" && read
 su - stack -c /opt/stack/devstack/stack.sh
 read
 
-# Update neutron client if necessary
-if [ -n "$NEUTRON_CLIENT_PATCH" ]
-then
-    su - stack -c "cd python-neutronclient && git fetch https://review.openstack.org/openstack/python-neutronclient $NEUTRON_CLIENT_PATCH && git checkout FETCH_HEAD && sudo python setup.py install"
-fi
-
 # Install tox globally
-pip install tox
+pip install tox &> /dev/null
 
 # Grab utility scripts from github and add them to stack's .bash_profile
 wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/profile | sudo -u stack tee -a /opt/stack/.bash_profile
 
 # Set up barbican container
-#sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/make_container.sh -O /opt/stack/make_container.sh
-#chmod +x /opt/stack/make_container.sh
-#sudo su - stack -c /opt/stack/make_container.sh
+sudo -u stack wget https://raw.githubusercontent.com/rm-you/devstack_deploy/centos/make_container.sh -O /opt/stack/make_container.sh
+chmod +x /opt/stack/make_container.sh
+sudo su - stack -c /opt/stack/make_container.sh
 
 # Fix missing route
 ROUTER_IP=$(su - stack -c "openstack router show router1 | awk -F '|' ' / external_gateway_info / {print \$3} ' | jq -r '.external_fixed_ips[0].ip_address'")
