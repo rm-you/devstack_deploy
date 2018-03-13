@@ -41,6 +41,7 @@ export BARBICAN_PATCH="$BARBICAN_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
 export OCTAVIA_AMP_BASE_OS="centos"
+export OCTAVIA_AMP_IMAGE_SIZE=3
 EOF
 
 # Precreate .cache so it won't have the wrong perms
