@@ -1,19 +1,15 @@
 #!/bin/bash
 
 OCTAVIA_PATCH=""
+OCTAVIA_LIB_PATCH=""
 OCTAVIA_CLIENT_PATCH=""
 BARBICAN_PATCH=""
 
 # Quick sanity check (should be run on Ubuntu 16.04 and MUST be run as root directly)
-if [ `lsb_release -rs` != "16.04" ]
+if [ `lsb_release -rs` != "18.04" ]
 then
-  echo -n "Warning: This script is only tested against Ubuntu xenial. Press <enter> to continue at your own risk... "
+  echo -n "Warning: This script is only tested against Ubuntu bionic. Press <enter> to continue at your own risk... "
   read
-fi
-if [ `whoami` != "root" -o -n "$SUDO_COMMAND" ]
-then
-  echo "This script must be run as root, and not using 'sudo'!"
-  exit 1
 fi
 
 # Set up the packages we need
@@ -28,9 +24,6 @@ wget -O - https://raw.githubusercontent.com/rm-you/devstack_deploy/master/local.
 # Create the stack user
 /tmp/devstack/tools/create-stack-user.sh
 
-# Apparently the group for libvirt changed to libvirtd in parallels?
-usermod -a -G libvirtd stack
-
 # Move everything into place
 mv /tmp/devstack /opt/stack/
 chown -R stack:stack /opt/stack/devstack/
@@ -40,8 +33,9 @@ cat >>/opt/stack/.profile <<EOF
 export BARBICAN_PATCH="$BARBICAN_PATCH"
 export OCTAVIA_PATCH="$OCTAVIA_PATCH"
 export OCTAVIACLIENT_BRANCH="$OCTAVIA_CLIENT_PATCH"
-export OCTAVIA_AMP_BASE_OS="centos"
-export OCTAVIA_AMP_IMAGE_SIZE=3
+export OCTAVIA_LIB_BRANCH="$OCTAVIA_LIB_PATCH"
+#export OCTAVIA_AMP_BASE_OS="ubuntu"
+#export OCTAVIA_AMP_IMAGE_SIZE=2
 EOF
 
 # Precreate .cache so it won't have the wrong perms

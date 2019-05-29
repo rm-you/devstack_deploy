@@ -33,8 +33,8 @@ function gen_backend() {
   openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 member
   openstack security group rule create --protocol tcp --dst-port 80 --ethertype IPv6 --remote-ip ::/0 member
   PRIVATE_NETWORK=$(openstack network list | awk '/ private / {print $2}')
-  openstack server create --image cirros-0.3.5-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
-  openstack server create --image cirros-0.3.5-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --wait
+  openstack server create --image cirros-0.4.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
+  openstack server create --image cirros-0.4.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --wait
   sleep 15
   if [ -z "$MEMBER1_IP" ]; then
     export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
@@ -130,3 +130,4 @@ function create_full() {
   echo "Done!"
 }
 
+source ~/.bashrc
