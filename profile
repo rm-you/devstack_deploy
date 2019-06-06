@@ -12,14 +12,23 @@ export BARBICAN_ENDPOINT="http://localhost:9311"
 # Set some utility variables
 PROJECT_ID=$(openstack token issue | awk '/ project_id / {print $4}')
 export PROJECT_ID="${PROJECT_ID:0:8}-${PROJECT_ID:8:4}-${PROJECT_ID:12:4}-${PROJECT_ID:16:4}-${PROJECT_ID:20}"
-export DEFAULT_NETWORK=$(openstack subnet list | awk '/ private-subnet / {print $2}')
-export DEFAULT_NETWORK_IPV6=$(openstack subnet list | awk '/ ipv6-private-subnet / {print $2}')
+export PRIVATE_SUBNET=$(openstack subnet list | awk '/ private-subnet / {print $2}')
+export PRIVATE_SUBNET_IPV6=$(openstack subnet list | awk '/ ipv6-private-subnet / {print $2}')
+export PUBLIC_SUBNET=$(openstack subnet list | awk '/ public-subnet / {print $2}')
+export PUBLIC_SUBNET_IPV6=$(openstack subnet list | awk '/ ipv6-public-subnet / {print $2}')
 
 # Make pretty-printing json easy
 alias json="python -mjson.tool"
 
 # Make sshing to amps easy
 alias ossh="ssh -i /etc/octavia/.ssh/octavia_ssh_key -l ubuntu"
+
+# Other aliases for quality of life
+alias oslb='openstack loadbalancer'
+alias oss='openstack server'
+alias gs='git status'
+alias gd='git diff'
+alias gp='git pull'
 
 # Run this to generate nova VMs as a test backend
 function gen_backend() {
@@ -33,8 +42,8 @@ function gen_backend() {
   openstack security group rule create --protocol tcp --dst-port 22 --ethertype IPv6 --remote-ip ::/0 member
   openstack security group rule create --protocol tcp --dst-port 80 --ethertype IPv6 --remote-ip ::/0 member
   PRIVATE_NETWORK=$(openstack network list | awk '/ private / {print $2}')
-  openstack server create --image cirros-0.4.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
-  openstack server create --image cirros-0.4.0-x86_64-disk --flavor 2 --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --wait
+  openstack server create --image cirros-0.4.0-x86_64-disk --flavor m1.tiny --nic net-id=$PRIVATE_NETWORK member1 --security-group member --key-name default
+  openstack server create --image cirros-0.4.0-x86_64-disk --flavor m1.tiny --nic net-id=$PRIVATE_NETWORK member2 --security-group member --key-name default --wait
   sleep 15
   if [ -z "$MEMBER1_IP" ]; then
     export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
@@ -68,15 +77,22 @@ function wait_for_status() {
 
 # Create a LB with Octavia
 function create_lb() {
-  openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK
+  openstack loadbalancer create --name lb1 --vip-subnet $PUBLIC_SUBNET
   wait_for_status
   openstack loadbalancer show lb1
 }
 
 function create_lb_ipv6() {
-  openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK_IPV6
+  openstack loadbalancer create --name lb1 --vip-subnet $PUBLIC_SUBNET_IPV6
   wait_for_status
   openstack loadbalancer show lb1
+}
+
+function create_lb_addvip() {
+  TOKEN=$(openstack token issue -f value -c id)
+  OCTAVIA_BASE_URL=$(openstack endpoint list --service octavia --interface public -c URL -f value)
+  curl -X POST -H "Content-Type: application/json" -H "X-Auth-Token: $TOKEN" -d "{\"loadbalancer\": {\"vip_subnet_id\": \"${PUBLIC_SUBNET}\", \"name\": \"lb1\", \"additional_vips\": [{\"subnet_id\": \"${PUBLIC_SUBNET_IPV6}\"}]}}" ${OCTAVIA_BASE_URL}/v2.0/lbaas/loadbalancers | jq
+  wait_for_status
 }
 
 # Create a Listener with Octavia

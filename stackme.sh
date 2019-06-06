@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OCTAVIA_PATCH="refs/changes/39/660239/14"
+OCTAVIA_PATCH="refs/changes/39/660239/23"
 OCTAVIA_LIB_PATCH="refs/changes/38/660238/1"
 OCTAVIA_CLIENT_PATCH=""
 BARBICAN_PATCH=""
