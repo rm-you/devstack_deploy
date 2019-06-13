@@ -1,8 +1,8 @@
 #!/bin/bash
 
-OCTAVIA_PATCH="refs/changes/39/660239/23"
-OCTAVIA_LIB_PATCH="refs/changes/38/660238/1"
-OCTAVIA_CLIENT_PATCH=""
+OCTAVIA_PATCH="refs/changes/39/660239/46"
+OCTAVIA_LIB_PATCH="refs/changes/10/664510/2"
+OCTAVIA_CLIENT_PATCH="refs/changes/73/664473/4"
 BARBICAN_PATCH=""
 
 # Quick sanity check (should be run on Ubuntu 16.04 and MUST be run as root directly)
