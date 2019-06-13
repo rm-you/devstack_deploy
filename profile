@@ -29,6 +29,7 @@ alias oss='openstack server'
 alias gs='git status'
 alias gd='git diff'
 alias gp='git pull'
+alias gl='git log --stat'
 
 # Run this to generate nova VMs as a test backend
 function gen_backend() {
@@ -91,7 +92,7 @@ function create_lb_ipv6() {
 function create_lb_addvip() {
   TOKEN=$(openstack token issue -f value -c id)
   OCTAVIA_BASE_URL=$(openstack endpoint list --service octavia --interface public -c URL -f value)
-  curl -X POST -H "Content-Type: application/json" -H "X-Auth-Token: $TOKEN" -d "{\"loadbalancer\": {\"vip_subnet_id\": \"${PUBLIC_SUBNET}\", \"name\": \"lb1\", \"additional_vips\": [{\"subnet_id\": \"${PUBLIC_SUBNET_IPV6}\"}]}}" ${OCTAVIA_BASE_URL}/v2.0/lbaas/loadbalancers | jq
+  curl -s -X POST -H "Content-Type: application/json" -H "X-Auth-Token: $TOKEN" -d "{\"loadbalancer\": {\"vip_subnet_id\": \"${PUBLIC_SUBNET}\", \"name\": \"lb1\", \"additional_vips\": [{\"subnet_id\": \"${PUBLIC_SUBNET_IPV6}\"}]}}" ${OCTAVIA_BASE_URL}/v2.0/lbaas/loadbalancers | jq
   wait_for_status
 }
 
