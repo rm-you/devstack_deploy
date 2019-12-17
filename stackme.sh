@@ -13,8 +13,11 @@ yum install vim
 yum-config-manager --add-repo https://edge.artifactory.yahoo.com:4443/artifactory/python_rpms/python_rpms.repo
 yum-config-manager --enable python_rpms-beta
 yum -y install oath_python37
-ln -s /opt/python/bin/python3* /usr/local/bin
-ln -s /opt/python/bin/pip3* /usr/local/bin
+
+# Do some stupid stuff to work around a broken python3 package
+mv /opt/python/bin/* /usr/local/bin/
+rmdir /opt/python/bin
+ln -s /usr/local/bin /opt/python/bin
 
 # Also enable the epel repo that devstack needs later
 yum-config-manager --enable epel
