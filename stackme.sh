@@ -1,12 +1,13 @@
 #!/bin/bash
 
-OCTAVIA_PATCH=""
-OCTAVIA_CLIENT_PATCH=""
+OCTAVIA_PATCH="refs/changes/62/693762/22"
+OCTAVIA_CLIENT_PATCH="refs/changes/11/694711/2"
 BARBICAN_PATCH=""
 
 # Centos has an ANCIENT version of git, grab a new version from some random repo
-yum -y install http://opensource.wandisco.com/centos/6/git/x86_64/wandisco-git-release-6-1.noarch.rpm
-yum -y update git
+#yum -y install http://opensource.wandisco.com/centos/6/git/x86_64/wandisco-git-release-6-1.noarch.rpm
+#yum -y update git
+yum install vim
 
 # Install python37 and link it in because we need it for stacking
 yum-config-manager --add-repo https://edge.artifactory.yahoo.com:4443/artifactory/python_rpms/python_rpms.repo
