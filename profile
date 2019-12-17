@@ -51,25 +51,21 @@ function gen_backend() {
 
 # Create a LB with Octavia
 function create_lb() {
-  openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK
-  watch openstack loadbalancer show lb1
+  openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK --wait
 }
 
 function create_lb_ipv6() {
-  openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK_IPV6
-  watch openstack loadbalancer show lb1
+  openstack loadbalancer create --name lb1 --vip-subnet $DEFAULT_NETWORK_IPV6 --wait
 }
 
 # Create a Listener with Octavia
 function create_listener() {
-  openstack loadbalancer listener create --protocol TERMINATED_HTTPS --protocol-port 443 --name listener1 --default-tls-container-ref $DEFAULT_TLS_CONTAINER lb1
-  watch openstack loadbalancer show lb1
+  openstack loadbalancer listener create --protocol TERMINATED_HTTPS --protocol-port 443 --name listener1 --default-tls-container-ref $DEFAULT_TLS_CONTAINER lb1 --wait
 }
 
 # Create a Pool with Octavia
 function create_pool() {
-  openstack loadbalancer pool create --protocol HTTP --lb-algorithm ROUND_ROBIN --name pool1 --listener listener1
-  watch openstack loadbalancer show lb1
+  openstack loadbalancer pool create --protocol HTTP --lb-algorithm ROUND_ROBIN --name pool1 --listener listener1 --wait
 }
 
 # Create Members with Octavia
@@ -78,12 +74,10 @@ function create_members() {
   if [ -z "$MEMBER1_IP" ]; then
     export MEMBER1_IP=$(openstack server show member1 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ "\\.") print a; else print $5}')
   fi
-  openstack loadbalancer member create --address  $MEMBER1_IP --protocol-port 80 --subnet-id $(openstack subnet list | awk '/ private-subnet / {print $2}') --name member1 pool1
+  openstack loadbalancer member create --address  $MEMBER1_IP --protocol-port 80 --subnet-id $(openstack subnet list | awk '/ private-subnet / {print $2}') --name member1 pool1 --wait
   if [ -z "$MEMBER2_IP" ]; then
-    # Get the second memberIP while we're waiting anyway
     export MEMBER2_IP=$(openstack server show member2 | awk '/ addresses / {a = substr($4, 9, length($4)-9); if (a ~ ":") print a; else print $5}')
   fi
-  watch openstack loadbalancer show lb1 # TODO: Make a proper wait, right now just assumes you will ctrl-c when ready
-  openstack loadbalancer member create --address  $MEMBER2_IP --protocol-port 80 --subnet-id $(openstack subnet list | awk '/ private-subnet / {print $2}') --name member2 pool1
+  openstack loadbalancer member create --address  $MEMBER2_IP --protocol-port 80 --subnet-id $(openstack subnet list | awk '/ private-subnet / {print $2}') --name member2 pool1 --wait
 }
 
